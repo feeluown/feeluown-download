@@ -26,7 +26,7 @@ setup(
         ),
     install_requires=[],
     entry_points={
-        'fuo.plugins_v2': [
+        'fuo.plugins_v1': [
             'download = fuo_dl',
         ]
     },
