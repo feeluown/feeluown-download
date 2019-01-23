@@ -1,12 +1,25 @@
-from concurrent.futures import ThreadPoolExecutor, as_completed
+"""
+fuo_dl
+------
+fuo_dl 是 FeelUOwn 的一个音乐下载插件。
+
+fuo_dl 支持多首歌并行下载，也支持一首歌分多段并行下载（也就是常说的多线程下载）。
+另外，用户可以在 ~/.fuorc 中自定义下载路径::
+
+   config.DOWNLOAD_DIR = '~/Music'
+"""
+
+
+
 import logging
+import sys
+import threading
+from concurrent.futures import wait
 
-import requests
-
-from .helpers import ContentRange
+from .downloader import Downloader
 
 __alias__ = '音乐下载'
-__desc__ = '音乐下载插件'
+__desc__ = __doc__
 __version__ = '0.1'
 
 
@@ -26,76 +39,46 @@ def cook_filepath(song):
     return '{} - {}.mp3'.format(song.title, song.artists_name)
 
 
+class ConsoleProgress:
+    def __init__(self, length):
+        self.length = length
+        self.lock = threading.Lock()
+        self.progress = {}
 
-def download(http, url, index, cr):
-    content = None
-    return index, content
+    def update(self, start, current, end):
+        with self.lock:
+            progress = self.progress
+            length = self.length
+            progress[(start, end)] = current
 
+            fill = "█"
+            not_fill = "-"
+            total = 50
 
-class DispatchTask:
-    def __init__(self, http, url):
-        self.http = http
-        self.url = url
-        self.dl_executor = None
+            fill_pos = set()
+            print('\rProgress: ', end='')
+            for r, c in progress.items():
+                s, _ = r
+                i1 = int(s / length * total)
+                i2 = int(c / length * total)
+                while i1 < i2:
+                    fill_pos.add(i1)
+                    i1 += 1
+            for num in range(0, total + 1):
+                c = fill if num in fill_pos else not_fill
+                print(c, end='')
+            sys.stdout.flush()
 
-    def run(self):
-        # XXX: 多大的 chunksize 比较合适？
-        chunksize = 1024 * 1024  # 1MB
+    def dl_callback(self):
+        pass
 
-        http = self.http
-        url = self.url
-        executor = self.dl_executor
-
-        resp = http.get(url, stream=True, timeout=2)
-        length = resp.headers.get('content-length')
-        if length is None:
-            content = resp.content
-        else:
-            parts = length / chunksize
-            futures = []
-            for i in range(0, parts + 1):
-                if i == parts:
-                    cr = ContentRange('bytes', i * chunksize, length)
-                else:
-                    cr = ContentRange('bytes', i * chunksize, chunksize * (i + 1))
-                future = executor.submit(download, http, url, i, cr)
-                futures.append(future)
-
-            parts = {}
-            for future in as_completed(futures):
-                index, part = future.result()
-                parts[index] = part
-            parts = sorted(parts)
+    def dl_range_callback(self):
+        pass
 
 
-class Downloader:
-    def __init__(self, http=None, max_workers=None):
-        self.pool = ThreadPoolExecutor(max_workers=max_workers)
-        self.http = http or requests
-
-        #: {url: [(0, 100), (400, 600)]}
-        self.progresses = {}
-
-    def download(self, url):
-        http = self.http
-
-        content = bytes()
-        resp = http.get(url, stream=True, timeout=2)
-        total_size = resp.headers.get('content-length')
-        if total_size is None:
-            content = resp.content
-            return content
-
-        total_size = int(total_size)
-        bytes_so_far = 0
-        for chunk in resp.iter_content(102400):
-            content += chunk
-            bytes_so_far += len(chunk)
-            progress = round(bytes_so_far * 1.0 / total_size * 100)
-        return content
-
-    def put(self, url):
-        self.pool.submit(download, http, url)
+def download(url, filename):
+    dler = Downloader()
+    wait([dler.create_task(url, filename)])
 
 
 def enable(app):
