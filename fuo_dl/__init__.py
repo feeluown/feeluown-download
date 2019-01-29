@@ -12,11 +12,10 @@ fuo_dl 支持多首歌并行下载，也支持一首歌分多段并行下载（�
 
 
 import logging
-import sys
-import threading
 from concurrent.futures import wait
 
 from .downloader import Downloader
+from .progress import ConsoleProgress
 
 __alias__ = '音乐下载'
 __desc__ = __doc__
@@ -39,46 +38,12 @@ def cook_filepath(song):
     return '{} - {}.mp3'.format(song.title, song.artists_name)
 
 
-class ConsoleProgress:
-    def __init__(self, length):
-        self.length = length
-        self.lock = threading.Lock()
-        self.progress = {}
-
-    def update(self, start, current, end):
-        with self.lock:
-            progress = self.progress
-            length = self.length
-            progress[(start, end)] = current
-
-            fill = "█"
-            not_fill = "-"
-            total = 50
-
-            fill_pos = set()
-            print('\rProgress: ', end='')
-            for r, c in progress.items():
-                s, _ = r
-                i1 = int(s / length * total)
-                i2 = int(c / length * total)
-                while i1 < i2:
-                    fill_pos.add(i1)
-                    i1 += 1
-            for num in range(0, total + 1):
-                c = fill if num in fill_pos else not_fill
-                print(c, end='')
-            sys.stdout.flush()
-
-    def dl_callback(self):
-        pass
-
-    def dl_range_callback(self):
-        pass
-
-
-def download(url, filename):
+def download(url, filename, console=False):
     dler = Downloader()
-    wait([dler.create_task(url, filename)])
+    progress_cb = None
+    if console is True:
+        progress_cb = ConsoleProgress().on_update
+    return dler.create_task(url, filename, progress_cb=progress_cb)
 
 
 def enable(app):
