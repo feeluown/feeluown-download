@@ -77,7 +77,7 @@ class FileDownloadTask:
     def _dl_range(self, f, url, start, end, length):
         http = self.http
         headers = {'Range': Range('bytes', [(start, end)]).to_header()}
-        resp = http.get(url, headers=headers, stream=True, timeout=2)
+        resp = http.get(url, headers=headers, stream=True, timeout=5)
         size = 0
         for chunk in resp.iter_content(1024 * 8):
             with self.seek_write_lock:
