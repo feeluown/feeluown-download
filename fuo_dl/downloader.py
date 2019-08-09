@@ -48,7 +48,10 @@ class FileDownloadTask:
 
         如果能获取，则返回长度，否则返回 None，遇到时错误抛出异常。
         """
-        resp = self.http.head(self.url, timeout=1)
+        headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2)'
+                                 ' AppleWebKit/537.36 (KHTML, like Gecko)'
+                                 ' Chrome/33.0.1750.152 Safari/537.36'}
+        resp = self.http.head(self.url, headers=headers, timeout=1)
         status_code = resp.status_code
         if status_code >= 400:
             logger.warning('Get file length failed, status:%d', status_code)
@@ -76,7 +79,10 @@ class FileDownloadTask:
 
     def _dl_range(self, f, url, start, end, length):
         http = self.http
-        headers = {'Range': Range('bytes', [(start, end)]).to_header()}
+        headers = {'Range': Range('bytes', [(start, end)]).to_header(),
+                   'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2)'
+                                 ' AppleWebKit/537.36 (KHTML, like Gecko)'
+                                 ' Chrome/33.0.1750.152 Safari/537.36'}
         resp = http.get(url, headers=headers, stream=True, timeout=5)
         size = 0
         for chunk in resp.iter_content(1024 * 8):
