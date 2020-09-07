@@ -1,7 +1,6 @@
 import logging
 import threading
-import time
-from concurrent.futures import ThreadPoolExecutor, wait
+from concurrent.futures import ThreadPoolExecutor
 
 import requests
 from .helpers import Range
@@ -65,7 +64,7 @@ class FileDownloadTask:
 
         length = self._get_length()
         if length is None:
-            raise RuntimeError("Fail to get file length. Currently, we only support downloading those files with length.")
+            raise RuntimeError("only support downloading those files with length.")
 
         with open(self.filename, 'wb') as f:
             futures = []
@@ -87,7 +86,7 @@ class FileDownloadTask:
             if self.progress_cb is not None:
                 try:
                     self.progress_cb(start, size + start, end, length)
-                except Exception as e:
+                except:  # noqa
                     logger.exception('Progress callback failed.')
 
 

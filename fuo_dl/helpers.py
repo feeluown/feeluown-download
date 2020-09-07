@@ -264,3 +264,7 @@ def parse_content_range_header(value, on_update=None):
 
     if is_byte_range_valid(start, stop, length):
         return ContentRange(units, start, stop, length, on_update=on_update)
+
+
+def cook_filename(title, artists_name):
+    return f'{title} - {artists_name}.mp3'
