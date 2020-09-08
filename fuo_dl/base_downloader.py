@@ -7,7 +7,9 @@ logger = logging.getLogger(__name__)
 
 class Downloader:
     async def run(self, url, filepath, **kwargs):
-        pass
+        """
+        :return: true if successed
+        """
 
     def clean(self, filepath):
         if os.path.exists(filepath):
