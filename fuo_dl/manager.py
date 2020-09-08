@@ -8,7 +8,8 @@ from fuocore import aio
 from fuocore.dispatch import Signal
 from feeluown.consts import SONG_DIR
 from .task import DownloadTask, DownloadStatus
-from .base_downloader import Downloader, CurlDownloader
+from .base_downloader import Downloader, CurlDownloader  # noqa
+from .py_downloader import AioRequestsDownloader  # noqa
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,7 @@ class DownloadManager:
 
         #: emit List[DownloadTask]
         self.tasks_changed = Signal()
-        self.downloader: Downloader = CurlDownloader()
+        self.downloader: Downloader = AioRequestsDownloader()
 
         self._path = SONG_DIR
 

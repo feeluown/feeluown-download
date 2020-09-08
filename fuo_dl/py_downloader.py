@@ -3,7 +3,10 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 
 import requests
+
+from fuocore import aio
 from .helpers import Range
+from .base_downloader import Downloader
 
 logger = logging.getLogger(__name__)
 
@@ -90,12 +93,22 @@ class FileDownloadTask:
                     logger.exception('Progress callback failed.')
 
 
-class Downloader:
+class RequestsDownloader:
     def __init__(self, max_workers=None):
         self.dl_executor = ThreadPoolExecutor(max_workers=max_workers)
-        self.dl_range_executor = ThreadPoolExecutor(max_workers=10)
+        self.dl_range_executor = ThreadPoolExecutor(max_workers=5)
 
     def create_task(self, url, filename, http=None, progress_cb=None):
         task = FileDownloadTask(url, filename, progress_cb=progress_cb)
         return self.dl_executor.submit(
             task.run, self.dl_range_executor, http or requests)
+
+
+class AioRequestsDownloader(Downloader):
+    async def run(self, url, filepath, **kwargs):
+        task = FileDownloadTask(url, filepath, progress_cb=None)
+        with ThreadPoolExecutor(max_workers=10) as dl_range_executor:
+            # FIXME: 理论上不应该使用默认的 executor，因为下载很可能阻塞其它任务
+            await aio.run_in_executor(None,
+                                      task.run, dl_range_executor, requests)
+        return True
