@@ -76,6 +76,9 @@ class DownloadManager:
             ok = await downloader.run(task.url, filepath)
         except asyncio.CancelledError:
             task.status = DownloadStatus.failed
+        except Exception:
+            logger.exception('download failed')
+            task.status = DownloadStatus.failed
         else:
             if ok:
                 task.status = DownloadStatus.ok

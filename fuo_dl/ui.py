@@ -6,7 +6,7 @@ from feeluown.helpers import async_run
 from feeluown.widgets.statusline import StatusLineItem
 
 from .manager import DownloadManager
-from .helpers import cook_filename
+from .helpers import cook_filename, guess_media_url_ext
 from .statusline import DownloadLabel
 
 
@@ -28,7 +28,7 @@ class DownloadUi:
             StatusLineItem('download', DownloadLabel(self._app, mgr)))
 
     def initialize(self):
-        self._app.playlist.song_changed.connect(self._on_song_changed, aioqueue=True)
+        self._app.player.media_changed.connect(self._on_media_changed, aioqueue=True)
 
         # bind download btn clicked signal
         try:
@@ -38,17 +38,20 @@ class DownloadUi:
         self.cur_song_dl_btn.clicked.connect(self._download_cur_media)
         self._ui.songs_table.about_to_show_menu.connect(self._add_download_action)
 
-    def _on_song_changed(self, song):
+    def _on_media_changed(self, media):
 
-        async def func(song):
-            if song is None:
+        async def func(media):
+            # FIXME: current media may be unrelated to current song
+            song = self._app.playlist.current_song
+            if song is None or media is None:
                 self.cur_song_dl_btn.setEnabled(False)
                 return
 
             title = await async_run(lambda: song.title)
             artists_name = await async_run(lambda: song.artists_name)
 
-            filename = cook_filename(title, artists_name)
+            ext = guess_media_url_ext(media.url)
+            filename = cook_filename(title, artists_name, ext)
             is_downloaded = self._mgr.is_file_downloaded(filename)
             if is_downloaded:
                 self.cur_song_dl_btn.setEnabled(False)
@@ -57,7 +60,7 @@ class DownloadUi:
                 self.cur_song_dl_btn.setEnabled(True)
                 self.cur_song_dl_btn.setChecked(False)
 
-        aio.create_task(func(song))
+        aio.create_task(func(media))
 
     def _download_cur_media(self):
 
@@ -69,13 +72,13 @@ class DownloadUi:
     async def download_song(self, song):
         title = await async_run(lambda: song.title)
         artists_name = await async_run(lambda: song.artists_name)
-
-        filename = cook_filename(title, artists_name)
-        if self._mgr.is_file_downloaded(filename):
-            return
-
-        media = self._app.player.current_media
-        if media.url:
+        media = await aio.run_in_executor(None, self._app.playlist.prepare_media, song)
+        if media and media.url:
+            ext = guess_media_url_ext(media.url)
+            filename = cook_filename(title, artists_name, ext)
+            if self._mgr.is_file_downloaded(filename):
+                return
+            logger.info(f'download {media.url} into {filename}')
             await self._mgr.get(media.url, filename)
         else:
             # this should not happen, so we log a error msg
