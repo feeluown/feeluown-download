@@ -7,6 +7,8 @@
      四个实现均是从 werkzeug 项目中拷贝过来。
 """
 
+from urllib.parse import urlparse
+
 
 class ContentRange(object):
 
@@ -266,5 +268,19 @@ def parse_content_range_header(value, on_update=None):
         return ContentRange(units, start, stop, length, on_update=on_update)
 
 
-def cook_filename(title, artists_name):
-    return f'{title} - {artists_name}.mp3'
+def cook_filename(title, artists_name, ext):
+    return f'{title} - {artists_name}.{ext}'
+
+
+def guess_media_url_ext(url):
+    """
+    url example: http://xxx.com/yy/zz.mp3?a=b
+
+    return mp3 when parsing failed
+    """
+    result = urlparse(url)
+    filename = result.path.rsplit('/', 1)[-1]
+    parts = filename.rsplit('.', 1)
+    if len(parts) > 1:
+        return parts[1]
+    return 'mp3'
