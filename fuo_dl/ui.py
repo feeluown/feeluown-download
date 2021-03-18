@@ -2,7 +2,7 @@ import logging
 
 from fuocore import aio
 from fuocore.models import ModelType
-from feeluown.helpers import async_run
+from feeluown.gui.helpers import async_run
 from feeluown.widgets.statusline import StatusLineItem
 
 from .manager import DownloadManager
@@ -72,14 +72,22 @@ class DownloadUi:
     async def download_song(self, song):
         title = await async_run(lambda: song.title)
         artists_name = await async_run(lambda: song.artists_name)
-        media = await aio.run_in_executor(None, self._app.playlist.prepare_media, song)
-        if media and media.url:
-            ext = guess_media_url_ext(media.url)
+        media = await aio.run_in_executor(
+            None,
+            self._app.library.song_prepare_media,
+            song,
+            self._app.playlist.audio_select_policy)
+        if hasattr(media, 'url'):
+            media_url = media.url
+        else:
+            media_url = media
+        if media_url:
+            ext = guess_media_url_ext(media_url)
             filename = cook_filename(title, artists_name, ext)
             if self._mgr.is_file_downloaded(filename):
                 return
-            logger.info(f'download {media.url} into {filename}')
-            await self._mgr.get(media.url, filename)
+            logger.info(f'download {media_url} into {filename}')
+            await self._mgr.get(media_url, filename)
         else:
             # this should not happen, so we log a error msg
             logger.error('url of current song is empty, will not download')
