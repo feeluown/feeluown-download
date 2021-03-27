@@ -28,6 +28,7 @@ class DownloadUi:
             StatusLineItem('download', DownloadLabel(self._app, mgr)))
 
     def initialize(self):
+        logger.info(f'fuo-dl init')
         self._app.player.media_changed.connect(self._on_media_changed, aioqueue=True)
 
         # bind download btn clicked signal
@@ -36,7 +37,10 @@ class DownloadUi:
         except TypeError:  # signal has no slots
             pass
         self.cur_song_dl_btn.clicked.connect(self._download_cur_media)
+        self._ui.pc_panel._sub_top_layout.addSpacing(8)
+        self._ui.pc_panel._sub_top_layout.addWidget(self._ui.pc_panel.download_btn)
         self._ui.songs_table.about_to_show_menu.connect(self._add_download_action)
+        self.cur_song_dl_btn.show()
 
     def _on_media_changed(self, media):
 
