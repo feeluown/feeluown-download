@@ -77,10 +77,8 @@ class DownloadUi:
             self._app.library.song_prepare_media,
             song,
             self._app.playlist.audio_select_policy)
-        if hasattr(media, 'url'):
-            media_url = media.url
-        else:
-            media_url = media
+        media = Media(media)
+        media_url = media.url
         if media_url:
             ext = guess_media_url_ext(media_url)
             filename = cook_filename(title, artists_name, ext)
