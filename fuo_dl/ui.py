@@ -3,6 +3,7 @@ import logging
 from fuocore import aio
 from fuocore.models import ModelType
 from feeluown.gui.helpers import async_run
+from feeluown.media import Media
 from feeluown.widgets.statusline import StatusLineItem
 
 from .manager import DownloadManager
