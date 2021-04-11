@@ -2,13 +2,16 @@ import logging
 
 from fuocore import aio
 from fuocore.models import ModelType
-from feeluown.gui.helpers import async_run
 from feeluown.media import Media
-from feeluown.widgets.statusline import StatusLineItem
+from feeluown.gui.helpers import async_run
+from feeluown.gui.widgets.statusline import StatusLineItem
 
 from .manager import DownloadManager
 from .helpers import cook_filename, guess_media_url_ext
 from .statusline import DownloadLabel
+
+import os
+from .tagger_helpers import prepare_filename
 
 
 logger = logging.getLogger(__name__)
@@ -58,7 +61,7 @@ class DownloadUi:
             ext = guess_media_url_ext(media.url)
             filename = cook_filename(title, artists_name, ext)
             is_downloaded = self._mgr.is_file_downloaded(filename)
-            if is_downloaded:
+            if is_downloaded or os.path.exists(media.url):
                 self.cur_song_dl_btn.setEnabled(False)
                 self.cur_song_dl_btn.setChecked(True)
             else:
@@ -72,7 +75,7 @@ class DownloadUi:
         song = self._app.playlist.current_song
         if song is None:
             return
-        aio.create_task(self.download_song(song))
+        aio.create_task(self.download_song_v2(song))
 
     async def download_song(self, song):
         title = await async_run(lambda: song.title)
@@ -95,12 +98,34 @@ class DownloadUi:
             # this should not happen, so we log a error msg
             logger.error('url of current song is empty, will not download')
 
+    async def download_song_v2(self, song):
+        media = await aio.run_in_executor(
+            None,
+            self._app.library.song_prepare_media,
+            song,
+            self._app.playlist.audio_select_policy)
+        media = Media(media)
+        media_url = media.url
+        if media_url:
+            song = self._app.library.cast_model_to_v1(song)
+            ext = guess_media_url_ext(media_url)
+            filename, tag_obj, cover_url = prepare_filename(song, ext)
+            if self._mgr.is_file_downloaded(filename):
+                return
+            logger.info(f'download {media_url} into {filename}')
+            await self._mgr.get(media_url, filename,
+                                cover_url=cover_url,
+                                tag_obj=tag_obj)
+        else:
+            # this should not happen, so we log a error msg
+            logger.error('url of current song is empty, will not download')
+
     def _add_download_action(self, ctx):
         def download(models):
             for model in models:
                 if model.meta.model_type == ModelType.song:
                     logger.info(f'add download task: {model}')
-                    aio.create_task(self.download_song(model))
+                    aio.create_task(self.download_song_v2(model))
 
         add_action = ctx['add_action']
         add_action('下载歌曲', download)

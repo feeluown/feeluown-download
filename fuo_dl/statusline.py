@@ -1,7 +1,7 @@
 from PyQt5.QtCore import Qt, QRect, QTimer
 from PyQt5.QtGui import QColor, QPalette
 
-from feeluown.widgets.statusline import StatuslineLabel
+from feeluown.gui.widgets.statusline import StatuslineLabel
 
 
 class DownloadLabel(StatuslineLabel):
