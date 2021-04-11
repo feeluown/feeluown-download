@@ -54,14 +54,19 @@ class DownloadUi:
             if song is None or media is None:
                 self.cur_song_dl_btn.setEnabled(False)
                 return
+            media_url = media.url
+            if os.path.exists(media.url):
+                self.cur_song_dl_btn.setEnabled(False)
+                self.cur_song_dl_btn.setChecked(True)
+                return
 
             title = await async_run(lambda: song.title)
             artists_name = await async_run(lambda: song.artists_name)
 
-            ext = guess_media_url_ext(media.url)
+            ext = guess_media_url_ext(media_url)
             filename = cook_filename(title, artists_name, ext)
             is_downloaded = self._mgr.is_file_downloaded(filename)
-            if is_downloaded or os.path.exists(media.url):
+            if is_downloaded:
                 self.cur_song_dl_btn.setEnabled(False)
                 self.cur_song_dl_btn.setChecked(True)
             else:
@@ -107,10 +112,14 @@ class DownloadUi:
         media = Media(media)
         media_url = media.url
         if media_url:
+            if os.path.exists(media_url):
+                logger.info(f'download {media_url} is local')
+                return
             song = self._app.library.cast_model_to_v1(song)
             ext = guess_media_url_ext(media_url)
             filename, tag_obj, cover_url = prepare_filename(song, ext)
             if self._mgr.is_file_downloaded(filename):
+                logger.info(f'download {filename} has exists')
                 return
             logger.info(f'download {media_url} into {filename}')
             await self._mgr.get(media_url, filename,
