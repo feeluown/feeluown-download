@@ -35,7 +35,7 @@ class DownloadManager:
     def list_tasks(self) -> List[DownloadTask]:
         return self._tasks
 
-    async def get(self, url, filename, headers=None, cookies=None):
+    async def get(self, url, filename, headers=None, cookies=None, cover_url=None, tag_obj=dict()):
         """download and save a file
 
         :param url: file url
@@ -48,6 +48,8 @@ class DownloadManager:
                 return
 
         task = DownloadTask(url, filename, self.downloader)
+        task.cover_url = cover_url
+        task.tag_obj = tag_obj
         self._tasks.append(task)
         await self._task_queue.put(task)
         self.tasks_changed.emit(self.list_tasks())
@@ -74,6 +76,9 @@ class DownloadManager:
         filepath = self._getpath(filename)
         try:
             ok = await downloader.run(task.url, filepath)
+            if task.tag_obj is not None:
+                from .tagger import set_tag_obj
+                set_tag_obj(filepath, task.tag_obj, task.cover_url)
         except asyncio.CancelledError:
             task.status = DownloadStatus.failed
         except Exception:

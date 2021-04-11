@@ -33,6 +33,10 @@ def divide(length, segment_size):
 class FileDownloadTask:
     def __init__(self, url, filename, progress_cb=None):
         self.url = url
+        # 似乎在QQ音乐的一部分下载地址中, 必须要加上'User-Agent'参数才可以
+        self.headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2)'
+                                      ' AppleWebKit/537.36 (KHTML, like Gecko)'
+                                      ' Chrome/33.0.1750.152 Safari/537.36'}
         self.filename = filename
         self.seek_write_lock = threading.Lock()
 
@@ -50,7 +54,7 @@ class FileDownloadTask:
 
         如果能获取，则返回长度，否则返回 None，遇到时错误抛出异常。
         """
-        resp = self.http.head(self.url, timeout=1)
+        resp = self.http.head(self.url, headers=self.headers, timeout=1)
         status_code = resp.status_code
         if status_code >= 400:
             logger.warning('Get file length failed, status:%d', status_code)
@@ -79,6 +83,7 @@ class FileDownloadTask:
     def _dl_range(self, f, url, start, end, length):
         http = self.http
         headers = {'Range': Range('bytes', [(start, end)]).to_header()}
+        headers.update(self.headers)
         resp = http.get(url, headers=headers, stream=True, timeout=5)
         size = 0
         for chunk in resp.iter_content(1024 * 8):
