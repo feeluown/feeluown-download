@@ -1,6 +1,6 @@
 import logging
 
-from fuocore import aio
+from feeluown.utils import aio
 from fuocore.models import ModelType
 from feeluown.media import Media
 from feeluown.gui.helpers import async_run
@@ -11,6 +11,7 @@ from .helpers import cook_filename, guess_media_url_ext
 from .statusline import DownloadLabel
 
 import os
+from .tagger_manager import TaggerManager
 from .tagger_helpers import prepare_filename
 
 
@@ -30,6 +31,8 @@ class DownloadUi:
         self.cur_song_dl_btn = ui.pc_panel.download_btn
         self._ui.bottom_panel.status_line.add_item(
             StatusLineItem('download', DownloadLabel(self._app, mgr)))
+
+        self._tagger_mgr = TaggerManager()
 
     def initialize(self):
         logger.info(f'fuo-dl init')
@@ -104,27 +107,36 @@ class DownloadUi:
             logger.error('url of current song is empty, will not download')
 
     async def download_song_v2(self, song):
-        media = await aio.run_in_executor(
-            None,
-            self._app.library.song_prepare_media,
-            song,
-            self._app.playlist.audio_select_policy)
+        # media = await aio.run_in_executor(
+        #     None,
+        #     self._app.library.song_prepare_media,
+        #     song,
+        #     self._app.playlist.audio_select_policy)
+        media = await async_run(
+            lambda: self._app.library.song_prepare_media(
+                song, self._app.playlist.audio_select_policy))
         media = Media(media)
         media_url = media.url
         if media_url:
             if os.path.exists(media_url):
                 logger.info(f'download {media_url} is local')
                 return
-            song = self._app.library.cast_model_to_v1(song)
+
+            # FIXME: netease need AlbumModel and ArtistModel for more infos
+            song = await async_run(lambda: self._app.library.song_upgrade(song))
             ext = guess_media_url_ext(media_url)
-            filename, tag_obj, cover_url = prepare_filename(song, ext)
+            filename, tag_obj, cover_url = await prepare_filename(song, ext)
             if self._mgr.is_file_downloaded(filename):
                 logger.info(f'download {filename} has exists')
                 return
+
             logger.info(f'download {media_url} into {filename}')
-            await self._mgr.get(media_url, filename,
-                                cover_url=cover_url,
-                                tag_obj=tag_obj)
+            file_path = await self._mgr.get(media_url, filename)
+
+            if file_path:
+                self._tagger_mgr.put_f(filename, file_path, tag_obj, cover_url)
+                self._mgr.download_finished.connect(self._tagger_mgr.write_tag)
+                self._mgr.download_failed.connect(self._tagger_mgr.remove_f)
         else:
             # this should not happen, so we log a error msg
             logger.error('url of current song is empty, will not download')

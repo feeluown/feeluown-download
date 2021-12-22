@@ -1,27 +1,31 @@
-
-
 import logging
 import os
+
+from feeluown.gui.helpers import async_run
+
 logger = logging.getLogger(__name__)
 
-from feeluown.consts import SONG_DIR
 
-
-def cook_tagobj(song):
+async def cook_tagobj(song):
     def beautify_str(str):
         return str.replace(' （', ' (').replace('（', ' (').replace('）', ')').strip()
 
+    title = await async_run(lambda: song.title)
+    artists_name = await async_run(lambda: song.artists_name)
+
     tag_obj = {
-        'title': song.title,
-        'artist': song.artists_name
+        'title': title,
+        'artist': artists_name
     }
-    if song.album_name.strip():
-        tag_obj['album'] = song.album_name
-        tag_obj['albumartist'] = song.album.artists_name
-        cover_url = song.album.cover
+
+    album_name = await async_run(lambda: song.album_name.strip())
+    if album_name:
+        tag_obj['album'] = await async_run(lambda: song.album_name)
+        tag_obj['albumartist'] = await async_run(lambda: song.album.artists_name)
+        cover_url = await async_run(lambda: song.album.cover)
 
         if hasattr(song.album, '_more_info'):
-            album_info = song.album._more_info()
+            album_info = await async_run(lambda: song.album._more_info())
             if int(song.identifier) in album_info['discs']:
                 tag_obj['discnumber'] = album_info.pop('discs')[int(song.identifier)]
                 tag_obj['tracknumber'] = album_info.pop('tracks')[int(song.identifier)]
@@ -30,7 +34,7 @@ def cook_tagobj(song):
                 album_info.pop('tracks')
             tag_obj = dict(tag_obj, **album_info)
     else:
-        cover_url = song.artists[0].cover
+        cover_url = await async_run(lambda: song.artists[0].cover)
 
     for key in tag_obj.keys():
         try:
@@ -48,7 +52,7 @@ def cook_filepath(tag_obj, ext):
         return str.replace('/', '_').replace(':', '_')
 
     if tag_obj.get('album'):
-        storage_path = '{}/{}'.format(correct_str(tag_obj['albumartist']), correct_str(tag_obj['album']))
+        storage_path = os.path.join(correct_str(tag_obj['albumartist']), correct_str(tag_obj['album']))
         extra_name = ''
         if tag_obj.get('discnumber') and tag_obj.get('tracknumber'):
             extra_name = '{:0>2d} '.format(int(tag_obj['tracknumber'].split('/')[0]))
@@ -61,11 +65,7 @@ def cook_filepath(tag_obj, ext):
     return storage_path, filename
 
 
-def prepare_filename(song, ext):
-    tag_obj, cover_url = cook_tagobj(song)
+async def prepare_filename(song, ext):
+    tag_obj, cover_url = await cook_tagobj(song)
     storage_path, filename = cook_filepath(tag_obj, ext)
-
-    absolute_path = '{}/{}'.format(SONG_DIR, storage_path)
-    if not os.path.isdir(absolute_path):
-        os.makedirs(absolute_path)
     return os.path.join(storage_path, filename), tag_obj, cover_url

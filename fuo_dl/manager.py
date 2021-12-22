@@ -4,9 +4,9 @@ import os
 
 from typing import List
 
-from fuocore import aio
-from fuocore.dispatch import Signal
-from feeluown.consts import SONG_DIR
+from feeluown.utils import aio
+from feeluown.utils.dispatch import Signal
+from feeluown.consts import SONG_DIR as DEFAULT_DOWNLOAD_DIR
 from .task import DownloadTask, DownloadStatus
 from .base_downloader import Downloader, CurlDownloader  # noqa
 from .py_downloader import AioRequestsDownloader  # noqa
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class DownloadManager:
-    def __init__(self, app):
+    def __init__(self, app, config):
         """
 
         :type app: feeluown.app.App
@@ -25,9 +25,11 @@ class DownloadManager:
 
         #: emit List[DownloadTask]
         self.tasks_changed = Signal()
+        self.download_finished = Signal()
+        self.download_failed = Signal()
         self.downloader: Downloader = AioRequestsDownloader()
 
-        self._path = SONG_DIR
+        self._path = config.DOWNLOAD_DIR or DEFAULT_DOWNLOAD_DIR
 
     def initialize(self):
         aio.create_task(self.worker())
@@ -35,7 +37,7 @@ class DownloadManager:
     def list_tasks(self) -> List[DownloadTask]:
         return self._tasks
 
-    async def get(self, url, filename, headers=None, cookies=None, cover_url=None, tag_obj=dict()):
+    async def get(self, url, filename, headers=None, cookies=None):
         """download and save a file
 
         :param url: file url
@@ -44,16 +46,20 @@ class DownloadManager:
         # check if there exists same task
         for task in self.list_tasks():
             if task.filename == filename:
-                logger.warning(f"task:{filename} has already been put into queue")
+                logger.warning(f"task: {filename} has already been put into queue")
                 return
 
+        filepath = self._getpath(filename)
+        dirpath = os.path.dirname(filepath)
+        if not os.path.isdir(dirpath):
+            os.makedirs(dirpath)
+
         task = DownloadTask(url, filename, self.downloader)
-        task.cover_url = cover_url
-        task.tag_obj = tag_obj
         self._tasks.append(task)
         await self._task_queue.put(task)
         self.tasks_changed.emit(self.list_tasks())
-        logger.info(f"task:{filename} has been put into queue")
+        logger.info(f"task: {filename} has been put into queue")
+        return filepath
 
     async def worker(self):
         while True:
@@ -68,6 +74,8 @@ class DownloadManager:
             path = self._getpath(task.filename)
             logger.info(f'content has been saved into {path}')
 
+            self.download_finished.emit(task.filename)
+
     async def run_task(self, task):
         task.status = DownloadStatus.running
         filename = task.filename
@@ -76,9 +84,6 @@ class DownloadManager:
         filepath = self._getpath(filename)
         try:
             ok = await downloader.run(task.url, filepath)
-            if task.tag_obj is not None:
-                from .tagger import set_tag_obj
-                set_tag_obj(filepath, task.tag_obj, task.cover_url)
         except asyncio.CancelledError:
             task.status = DownloadStatus.failed
         except Exception:
@@ -93,6 +98,7 @@ class DownloadManager:
         # clean up the temp file if needed
         if task.status is DownloadStatus.failed:
             downloader.clean(filepath)
+            self.download_failed.emit(filename)
 
     def is_file_downloaded(self, filename):
         return os.path.exists(self._getpath(filename))
