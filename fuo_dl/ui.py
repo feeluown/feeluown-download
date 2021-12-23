@@ -58,7 +58,7 @@ class DownloadUi:
                 self.cur_song_dl_btn.setEnabled(False)
                 return
             media_url = media.url
-            if os.path.exists(media.url):
+            if media.url and media.url.startswith('http'):
                 self.cur_song_dl_btn.setEnabled(False)
                 self.cur_song_dl_btn.setChecked(True)
                 return
