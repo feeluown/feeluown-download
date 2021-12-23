@@ -33,7 +33,7 @@ def divide(length, segment_size):
 class FileDownloadTask:
     def __init__(self, url, filename, progress_cb=None):
         self.url = url
-        # 似乎在QQ音乐的一部分下载地址中, 必须要加上'User-Agent'参数才可以
+        # 部分资源地址需要加上 User-Agent 参数才可以访问
         self.headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2)'
                                       ' AppleWebKit/537.36 (KHTML, like Gecko)'
                                       ' Chrome/33.0.1750.152 Safari/537.36'}
