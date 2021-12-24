@@ -27,13 +27,28 @@ dm_ui = None
 
 def init_config(config):
     config.deffield('DOWNLOAD_DIR', type_=str, default=None, desc='')
+    config.deffield('CORE_LANGUAGE', type_=str, default='auto', desc='')
+    config.deffield('NAME_FORMATS', type_=list, default=None, desc='')
 
 
 def autoload(app):
     global dm_mgr, dm_ui
 
+    dm_mgr = dm_mgr or DownloadManager(app)
+    dm_mgr.update(app.config.fuo_dl)
+
+    if app.mode & app.GuiMode:
+        from .ui import DownloadUi  # noqa
+
+        dm_ui = dm_ui or DownloadUi(dm_mgr, app, app.ui)
+        dm_ui.update(app.config.fuo_dl)
+
+
+def enable(app):
+    global dm_mgr, dm_ui
+
     # initialize download manager
-    dm_mgr = dm_mgr or DownloadManager(app, app.config.fuo_dl)
+    dm_mgr = dm_mgr or DownloadManager(app)
     dm_mgr.initialize()
 
     # initialize ui for download manager
@@ -43,8 +58,6 @@ def autoload(app):
         dm_ui = dm_ui or DownloadUi(dm_mgr, app, app.ui)
         dm_ui.initialize()
 
-
-def enable(app):
     app.initialized.connect(lambda *args: autoload(*args),
                             weak=False, aioqueue=True)
 

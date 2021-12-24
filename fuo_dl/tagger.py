@@ -94,12 +94,12 @@ def set_tag_info_aac(f_path, tag_info, cover_data=None):
 
 
 def set_tag_obj(f_path, tag_info, cover_data=None):
-    logger.info(f"write tag: {f_path}")
+    logger.info(f'write tag: {f_path}')
 
     ext = f_path.split('.')[-1]
     if ext in ['flac', 'ape', 'wav', 'mp3', 'm4a']:
         if f_path.endswith('.wav'):
-            logger.warning(f"unsupported file: {f_path}")
+            logger.warning(f'unsupported file: {f_path}')
             return
 
         if f_path.endswith('.flac'):
@@ -112,4 +112,4 @@ def set_tag_obj(f_path, tag_info, cover_data=None):
             func = set_tag_info_aac
         func(f_path, tag_info, cover_data)
     else:
-        logger.warning(f"unknown type: {f_path}")
+        logger.warning(f'unknown type: {f_path}')
