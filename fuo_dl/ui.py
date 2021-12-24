@@ -10,7 +10,6 @@ from .manager import DownloadManager
 from .helpers import cook_filename, guess_media_url_ext
 from .statusline import DownloadLabel
 
-import os
 from .tagger_manager import TaggerManager
 from .tagger_helpers import prepare_filename
 
@@ -33,6 +32,10 @@ class DownloadUi:
             StatusLineItem('download', DownloadLabel(self._app, mgr)))
 
         self._tagger_mgr = TaggerManager()
+        self._proc_lans = None
+        self._name_fmts = None
+
+        self._app.extra_func = None
 
     def initialize(self):
         logger.info(f'fuo-dl init')
@@ -49,6 +52,12 @@ class DownloadUi:
         self._ui.songs_table.about_to_show_menu.connect(self._add_download_action)
         self.cur_song_dl_btn.show()
 
+        self._mgr.download_finished.connect(self._tagger_mgr.write_tag)
+
+    def update(self, config):
+        self._proc_lans = config.CORE_LANGUAGE
+        self._name_fmts = config.NAME_FORMATS
+
     def _on_media_changed(self, media):
 
         async def func(media):
@@ -58,16 +67,22 @@ class DownloadUi:
                 self.cur_song_dl_btn.setEnabled(False)
                 return
             media_url = media.url
-            if media.url and media.url.startswith('http'):
+            if media_url and not media_url.startswith('http'):
                 self.cur_song_dl_btn.setEnabled(False)
                 self.cur_song_dl_btn.setChecked(True)
                 return
 
-            title = await async_run(lambda: song.title)
-            artists_name = await async_run(lambda: song.artists_name)
-
             ext = guess_media_url_ext(media_url)
-            filename = cook_filename(title, artists_name, ext)
+            # FIXME: netease need AlbumModel and ArtistModel for more infos
+            if False:
+                song = await aio.run_fn(self._app.library.song_upgrade, song)
+                filename, _, _ = await aio.run_fn(prepare_filename, song, ext,
+                                                  self._proc_lans, self._name_fmts,
+                                                  self._app.extra_func)
+            else:
+                title = await async_run(lambda: song.title)
+                artists_name = await async_run(lambda: song.artists_name)
+                filename = cook_filename(title, artists_name, ext)
             is_downloaded = self._mgr.is_file_downloaded(filename)
             if is_downloaded:
                 self.cur_song_dl_btn.setEnabled(False)
@@ -83,60 +98,40 @@ class DownloadUi:
         song = self._app.playlist.current_song
         if song is None:
             return
-        aio.create_task(self.download_song_v2(song))
+        aio.create_task(self.download_song(song))
 
     async def download_song(self, song):
-        title = await async_run(lambda: song.title)
-        artists_name = await async_run(lambda: song.artists_name)
-        media = await aio.run_in_executor(
-            None,
+        media = await aio.run_fn(
             self._app.library.song_prepare_media,
             song,
             self._app.playlist.audio_select_policy)
         media = Media(media)
         media_url = media.url
         if media_url:
-            ext = guess_media_url_ext(media_url)
-            filename = cook_filename(title, artists_name, ext)
-            if self._mgr.is_file_downloaded(filename):
-                return
-            logger.info(f'download {media_url} into {filename}')
-            await self._mgr.get(media_url, filename)
-        else:
-            # this should not happen, so we log a error msg
-            logger.error('url of current song is empty, will not download')
-
-    async def download_song_v2(self, song):
-        # media = await aio.run_in_executor(
-        #     None,
-        #     self._app.library.song_prepare_media,
-        #     song,
-        #     self._app.playlist.audio_select_policy)
-        media = await async_run(
-            lambda: self._app.library.song_prepare_media(
-                song, self._app.playlist.audio_select_policy))
-        media = Media(media)
-        media_url = media.url
-        if media_url:
-            if os.path.exists(media_url):
-                logger.info(f'download {media_url} is local')
+            if not media_url.startswith('http'):
+                # media_url in local provider is filelname
+                logger.info(f'download {media_url} has exists')
                 return
 
-            # FIXME: netease need AlbumModel and ArtistModel for more infos
-            song = await async_run(lambda: self._app.library.song_upgrade(song))
             ext = guess_media_url_ext(media_url)
-            filename, tag_obj, cover_url = await prepare_filename(song, ext)
+            if self._name_fmts:
+                # FIXME: netease need AlbumModel and ArtistModel for more infos
+                song = await aio.run_fn(self._app.library.song_upgrade, song)
+                filename, tag_obj, cover_url = await aio.run_fn(prepare_filename, song, ext,
+                                                                self._proc_lans, self._name_fmts,
+                                                                self._app.extra_func)
+            else:
+                title = await async_run(lambda: song.title)
+                artists_name = await async_run(lambda: song.artists_name)
+                filename = cook_filename(title, artists_name, ext)
             if self._mgr.is_file_downloaded(filename):
                 logger.info(f'download {filename} has exists')
                 return
 
             logger.info(f'download {media_url} into {filename}')
             file_path = await self._mgr.get(media_url, filename)
-
-            if file_path:
+            if self._name_fmts and file_path:
                 self._tagger_mgr.put_f(filename, file_path, tag_obj, cover_url)
-                self._mgr.download_finished.connect(self._tagger_mgr.write_tag)
-                self._mgr.download_failed.connect(self._tagger_mgr.remove_f)
         else:
             # this should not happen, so we log a error msg
             logger.error('url of current song is empty, will not download')
@@ -146,7 +141,7 @@ class DownloadUi:
             for model in models:
                 if model.meta.model_type == ModelType.song:
                     logger.info(f'add download task: {model}')
-                    aio.create_task(self.download_song_v2(model))
+                    aio.create_task(self.download_song(model))
 
         add_action = ctx['add_action']
         add_action('下载歌曲', download)
