@@ -1,18 +1,37 @@
 import logging
+import os
 
 import urllib.request
 from feeluown.utils import aio
 
+from .tag_helpers import cook_tagobj, beautify_tagobj, cook_filepath
 from .tagger import set_tag_obj
 
 logger = logging.getLogger(__name__)
 
 
 class TagManager:
-    def __init__(self):
+    def __init__(self, app):
+        self._app = app
         self._tagger_map = dict()
 
+        self._proc_lans = None
+        self._name_fmts = None
+
         self.refine_tagobj_func = None
+
+    def update(self, config):
+        self._proc_lans = config.CORE_LANGUAGE
+        self._name_fmts = config.NAME_FORMATS
+
+    def prepare_tag(self, song):
+        tag_obj, cover_url = cook_tagobj(song, self.refine_tagobj_func)
+        tag_obj = beautify_tagobj(tag_obj, self._proc_lans)
+        return tag_obj, cover_url
+
+    def prepare_filename(self, tag_obj, ext):
+        storage_path, filename = cook_filepath(tag_obj, ext, self._name_fmts)
+        return os.path.join(storage_path, filename)
 
     def put_f(self, filename, file_path, tag_obj, cover_url):
         if filename not in self._tagger_map.keys():

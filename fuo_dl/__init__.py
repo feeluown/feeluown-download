@@ -12,6 +12,7 @@ fuo_dl 支持多首歌并行下载，也支持一首歌分多段并行下载（�
 import logging
 
 from .manager import DownloadManager
+from .tag_manager import TagManager
 
 __alias__ = '音乐下载'
 __desc__ = __doc__
@@ -22,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 dm_mgr = None
+tg_mgr = None
 dm_ui = None
 
 
@@ -35,30 +37,31 @@ def init_config(config):
 
 
 def autoload(app):
-    global dm_mgr, dm_ui
+    global dm_mgr, tg_mgr
 
     dm_mgr = dm_mgr or DownloadManager(app)
     dm_mgr.update(app.config.fuo_dl)
 
-    if app.mode & app.GuiMode:
-        from .ui import DownloadUi  # noqa
-
-        dm_ui = dm_ui or DownloadUi(dm_mgr, app, app.ui)
-        dm_ui.update(app.config.fuo_dl)
+    tg_mgr = tg_mgr or TagManager(app)
+    tg_mgr.update(app.config.fuo_dl)
 
 
 def enable(app):
-    global dm_mgr, dm_ui
+    global dm_mgr, dm_ui, tg_mgr
 
     # initialize download manager
     dm_mgr = dm_mgr or DownloadManager(app)
     dm_mgr.initialize()
 
+    # initialize tag manager
+    tg_mgr = tg_mgr or TagManager(app)
+    app.tag_mgr = tg_mgr
+
     # initialize ui for download manager
     if app.mode & app.GuiMode:
         from .ui import DownloadUi  # noqa
 
-        dm_ui = dm_ui or DownloadUi(dm_mgr, app, app.ui)
+        dm_ui = dm_ui or DownloadUi(dm_mgr, tg_mgr, app, app.ui)
         dm_ui.initialize()
 
     app.initialized.connect(lambda *args: autoload(*args),
