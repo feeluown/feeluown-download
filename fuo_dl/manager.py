@@ -53,7 +53,7 @@ class DownloadManager:
 
         filepath = self._getpath(filename)
         dirpath = os.path.dirname(filepath)
-        if not os.path.isdir(dirpath):
+        if not os.path.exists(dirpath):
             os.makedirs(dirpath)
 
         task = DownloadTask(url, filename, self.downloader)

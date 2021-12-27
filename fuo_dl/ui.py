@@ -10,7 +10,7 @@ from .manager import DownloadManager
 from .helpers import cook_filename, guess_media_url_ext
 from .statusline import DownloadLabel
 
-from .tagger_manager import TaggerManager
+from .tagger_manager import TagManager
 from .tagger_helpers import prepare_filename
 
 
@@ -31,11 +31,11 @@ class DownloadUi:
         self._ui.bottom_panel.status_line.add_item(
             StatusLineItem('download', DownloadLabel(self._app, mgr)))
 
-        self._tagger_mgr = TaggerManager()
+        self._tag_mgr = TagManager()
         self._proc_lans = None
         self._name_fmts = None
 
-        self._app.extra_func = None
+        self._app.tag_mgr = self._tag_mgr
 
     def initialize(self):
         logger.info(f'fuo-dl init')
@@ -52,7 +52,7 @@ class DownloadUi:
         self._ui.songs_table.about_to_show_menu.connect(self._add_download_action)
         self.cur_song_dl_btn.show()
 
-        self._mgr.download_finished.connect(self._tagger_mgr.write_tag)
+        self._mgr.download_finished.connect(self._tag_mgr.write_tag)
 
     def update(self, config):
         self._proc_lans = config.CORE_LANGUAGE
@@ -78,7 +78,7 @@ class DownloadUi:
                 song = await aio.run_fn(self._app.library.song_upgrade, song)
                 filename, _, _ = await aio.run_fn(prepare_filename, song, ext,
                                                   self._proc_lans, self._name_fmts,
-                                                  self._app.extra_func)
+                                                  self._tag_mgr.refine_tagobj_func)
             else:
                 title = await async_run(lambda: song.title)
                 artists_name = await async_run(lambda: song.artists_name)
@@ -119,7 +119,7 @@ class DownloadUi:
                 song = await aio.run_fn(self._app.library.song_upgrade, song)
                 filename, tag_obj, cover_url = await aio.run_fn(prepare_filename, song, ext,
                                                                 self._proc_lans, self._name_fmts,
-                                                                self._app.extra_func)
+                                                                self._tag_mgr.refine_tagobj_func)
             else:
                 title = await async_run(lambda: song.title)
                 artists_name = await async_run(lambda: song.artists_name)
@@ -131,7 +131,7 @@ class DownloadUi:
             logger.info(f'download {media_url} into {filename}')
             file_path = await self._mgr.get(media_url, filename)
             if self._name_fmts and file_path:
-                self._tagger_mgr.put_f(filename, file_path, tag_obj, cover_url)
+                self._tag_mgr.put_f(filename, file_path, tag_obj, cover_url)
         else:
             # this should not happen, so we log a error msg
             logger.error('url of current song is empty, will not download')

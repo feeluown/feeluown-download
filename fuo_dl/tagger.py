@@ -22,14 +22,12 @@ def set_tag_info_flac(f_path, tag_info, cover_data=None):
     for key in tag_info.keys():
         audio[key] = tag_info[key]
     if cover_data:
-        albumart = cover_data
         pic = mutagen.flac.Picture()
         pic.mime = 'image/jpeg'
         pic.type = 3
-        pic.data = albumart.read()
+        pic.data = cover_data
         audio.clear_pictures()
         audio.add_picture(pic)
-        albumart.close()
     audio.save()
 
 
@@ -61,15 +59,13 @@ def set_tag_info_mp3(f_path, tag_info, cover_data=None):
     audio.save()
     if cover_data:
         audio = mutagen.mp3.MP3(f_path)
-        albumart = cover_data
         audio['APIC'] = mutagen.id3.APIC(
             encoding=3,  # 3 is for utf-8
             mime='image/jpeg',  # image/jpeg or image/png
             type=3,  # 3 is for the cover image
             desc='',
-            data=albumart.read()
+            data=cover_data
         )
-        albumart.close()
         audio.save()
 
 
@@ -84,12 +80,10 @@ def set_tag_info_aac(f_path, tag_info, cover_data=None):
     audio.save()
     if cover_data:
         audio = mutagen.mp4.MP4(f_path)
-        albumart = cover_data
         audio['covr'] = [mutagen.mp4.MP4Cover(
-            albumart.read(),
+            cover_data,
             imageformat=13  # 13 or 14 for png
         )]
-        albumart.close()
         audio.save()
 
 
