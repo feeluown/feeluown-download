@@ -11,31 +11,25 @@ from .helpers import cook_filename, guess_media_url_ext
 from .statusline import DownloadLabel
 
 from .tag_manager import TagManager
-from .tag_helpers import prepare_filename
 
 
 logger = logging.getLogger(__name__)
 
 
 class DownloadUi:
-    def __init__(self, mgr: DownloadManager, app, ui):
+    def __init__(self, mgr: DownloadManager, tag_mgr: TagManager, app, ui):
         """
 
         :type app: feeluown.app.App
         :type ui: feeluown.ui.Ui
         """
         self._mgr = mgr
+        self._tag_mgr = tag_mgr
         self._app = app
         self._ui = ui
         self.cur_song_dl_btn = ui.pc_panel.download_btn
         self._ui.bottom_panel.status_line.add_item(
             StatusLineItem('download', DownloadLabel(self._app, mgr)))
-
-        self._tag_mgr = TagManager()
-        self._proc_lans = None
-        self._name_fmts = None
-
-        self._app.tag_mgr = self._tag_mgr
 
     def initialize(self):
         logger.info(f'fuo-dl init')
@@ -53,10 +47,6 @@ class DownloadUi:
         self.cur_song_dl_btn.show()
 
         self._mgr.download_finished.connect(self._tag_mgr.write_tag)
-
-    def update(self, config):
-        self._proc_lans = config.CORE_LANGUAGE
-        self._name_fmts = config.NAME_FORMATS
 
     def _on_media_changed(self, media):
 
@@ -76,9 +66,8 @@ class DownloadUi:
             # FIXME: netease need AlbumModel and ArtistModel for more infos
             if False:
                 song = await aio.run_fn(self._app.library.song_upgrade, song)
-                filename, _, _ = await aio.run_fn(prepare_filename, song, ext,
-                                                  self._proc_lans, self._name_fmts,
-                                                  self._tag_mgr.refine_tagobj_func)
+                tag_obj, cover_url = await aio.run_fn(self._tag_mgr.prepare_tag, song)
+                filename = self._tag_mgr.prepare_filename(tag_obj, ext)
             else:
                 title = await async_run(lambda: song.title)
                 artists_name = await async_run(lambda: song.artists_name)
@@ -114,12 +103,11 @@ class DownloadUi:
                 return
 
             ext = guess_media_url_ext(media_url)
-            if self._name_fmts:
+            if self._tag_mgr._name_fmts:
                 # FIXME: netease need AlbumModel and ArtistModel for more infos
                 song = await aio.run_fn(self._app.library.song_upgrade, song)
-                filename, tag_obj, cover_url = await aio.run_fn(prepare_filename, song, ext,
-                                                                self._proc_lans, self._name_fmts,
-                                                                self._tag_mgr.refine_tagobj_func)
+                tag_obj, cover_url = await aio.run_fn(self._tag_mgr.prepare_tag, song)
+                filename = self._tag_mgr.prepare_filename(tag_obj, ext)
             else:
                 title = await async_run(lambda: song.title)
                 artists_name = await async_run(lambda: song.artists_name)
@@ -130,7 +118,7 @@ class DownloadUi:
 
             logger.info(f'download {media_url} into {filename}')
             file_path = await self._mgr.get(media_url, filename)
-            if self._name_fmts and file_path:
+            if self._tag_mgr._name_fmts and file_path:
                 self._tag_mgr.put_f(filename, file_path, tag_obj, cover_url)
         else:
             # this should not happen, so we log a error msg
