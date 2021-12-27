@@ -10,8 +10,8 @@ from .manager import DownloadManager
 from .helpers import cook_filename, guess_media_url_ext
 from .statusline import DownloadLabel
 
-from .tagger_manager import TagManager
-from .tagger_helpers import prepare_filename
+from .tag_manager import TagManager
+from .tag_helpers import prepare_filename
 
 
 logger = logging.getLogger(__name__)
