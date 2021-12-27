@@ -7,6 +7,8 @@ logger = logging.getLogger(__name__)
 
 def beautify_tagobj(tag_obj, lans):
     def beautify_str(_str):
+        # 不同音乐平台的音乐信息对于中文括号和英文括号的显示比较混乱，常出现于(Live)/(Explicit)等
+        # 当出现中文左括号时 我们将其美化为空格+英文左括号，右括号只需直接替换即可
         return _str.replace(' （', ' (').replace('（', ' (').replace('）', ')').strip()
 
     try:
@@ -28,8 +30,9 @@ def beautify_tagobj(tag_obj, lans):
         tag_obj[key] = post_proc(tag_obj[key])
     return tag_obj
 
-
-def cook_tagobj(song, extra_func=None):
+# tag_obj为mutagen中mp3格式下默认的字段，默认支持title/artist/album/albumartist4种字段
+# 使用者也可以通过refine_tagobj_func增加更多如tracknumber/discnumber/genre/date等
+def cook_tagobj(song, refine_tagobj_func=None):
     tag_obj = {
         'title': song.title,
         'artist': song.artists_name
@@ -39,11 +42,13 @@ def cook_tagobj(song, extra_func=None):
         tag_obj['album'] = song.album.name
         tag_obj['albumartist'] = song.album.artists_name
         cover_url = song.album.cover
-        if extra_func:
-            song_info = extra_func(song)
-            tag_obj = dict(tag_obj, **song_info)
     else:
         cover_url = song.artists[0].cover
+
+    if refine_tagobj_func:
+        song_info = refine_tagobj_func(song)
+        tag_obj = dict(tag_obj, **song_info)
+
     return tag_obj, cover_url
 
 
