@@ -36,25 +36,15 @@ def init_config(config):
     config.deffield('NAME_FORMATS', type_=list, default=None, desc='')
 
 
-def autoload(app):
-    global dm_mgr, tg_mgr
-
-    dm_mgr = dm_mgr or DownloadManager(app)
-    dm_mgr.update(app.config.fuo_dl)
-
-    tg_mgr = tg_mgr or TagManager(app)
-    tg_mgr.update(app.config.fuo_dl)
-
-
 def enable(app):
     global dm_mgr, dm_ui, tg_mgr
 
     # initialize download manager
-    dm_mgr = dm_mgr or DownloadManager(app)
+    dm_mgr = dm_mgr or DownloadManager(app, app.config.fuo_dl)
     dm_mgr.initialize()
 
     # initialize tag manager
-    tg_mgr = tg_mgr or TagManager(app)
+    tg_mgr = tg_mgr or TagManager(app, app.config.fuo_dl)
     app.tag_mgr = tg_mgr
 
     # initialize ui for download manager
@@ -63,9 +53,6 @@ def enable(app):
 
         dm_ui = dm_ui or DownloadUi(dm_mgr, tg_mgr, app, app.ui)
         dm_ui.initialize()
-
-    app.initialized.connect(lambda *args: autoload(*args),
-                            weak=False, aioqueue=True)
 
 
 def disable(app):

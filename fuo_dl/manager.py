@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class DownloadManager:
-    def __init__(self, app):
+    def __init__(self, app, config):
         """
 
         :type app: feeluown.app.App
@@ -28,9 +28,6 @@ class DownloadManager:
         self.download_finished = Signal()
         self.downloader: Downloader = AioRequestsDownloader()
 
-        self._path = None
-
-    def update(self, config):
         self._path = config.DOWNLOAD_DIR or DEFAULT_DOWNLOAD_DIR
 
     def initialize(self):

@@ -11,18 +11,14 @@ logger = logging.getLogger(__name__)
 
 
 class TagManager:
-    def __init__(self, app):
+    def __init__(self, app, config):
         self._app = app
         self._tagger_map = dict()
 
-        self._proc_lans = None
-        self._name_fmts = None
-
-        self.refine_tagobj_func = None
-
-    def update(self, config):
         self._proc_lans = config.CORE_LANGUAGE
         self._name_fmts = config.NAME_FORMATS
+
+        self.refine_tagobj_func = None
 
     def prepare_tag(self, song):
         tag_obj, cover_url = cook_tagobj(song, self.refine_tagobj_func)
