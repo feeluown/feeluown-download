@@ -24,7 +24,11 @@ setup(
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3 :: Only',
     ],
-    install_requires=['feeluown>=3.5.3', 'requests'],
+    install_requires=[
+        'feeluown>=3.5.3',
+        'requests',
+        'mutagen>=1.37',
+    ],
     entry_points={
         'fuo.plugins_v1': [
             'download = fuo_dl',
