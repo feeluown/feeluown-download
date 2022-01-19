@@ -84,7 +84,7 @@ def cook_filepath(tag_obj, ext, fmts):
         valid_tag_map['track'] = '{:0>2d}'.format(int(tag_obj['tracknumber'].split('/')[0]))
         if len(tag_obj['discnumber'].split('/')) > 1 and int(tag_obj['discnumber'].split('/')[1]) > 1:
             # 只有在disc的总数>1时, 我们需要对不同disc相同track的歌曲进行区分
-            valid_tag_map['track'] = '{}-{}'.format(valid_tag_map['discnumber'].split('/')[0], valid_tag_map['track'])
+            valid_tag_map['track'] = '{}-{}'.format(tag_obj['discnumber'].split('/')[0], valid_tag_map['track'])
 
     # 最坏的情况, 只有'{title}'字段有效
     if '{title}' not in fmts:
