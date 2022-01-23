@@ -5,7 +5,7 @@ from setuptools import setup
 
 setup(
     name='fuo_dl',
-    version='0.2',
+    version='0.3',
     description='feeluown download plugin',
     author='Cosven',
     author_email='yinshaowen241@gmail.com',
