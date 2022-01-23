@@ -4,8 +4,8 @@ import os
 
 from typing import List
 
-from fuocore import aio
-from fuocore.dispatch import Signal
+from feeluown.utils import aio
+from feeluown.utils.dispatch import Signal
 from feeluown.consts import SONG_DIR
 from .task import DownloadTask, DownloadStatus
 from .base_downloader import Downloader, CurlDownloader  # noqa

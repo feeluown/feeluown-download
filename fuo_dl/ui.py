@@ -1,10 +1,10 @@
 import logging
 
-from fuocore import aio
-from fuocore.models import ModelType
+from feeluown.utils import aio
+from feeluown.models import ModelType
 from feeluown.gui.helpers import async_run
 from feeluown.media import Media
-from feeluown.widgets.statusline import StatusLineItem
+from feeluown.gui.widgets.statusline import StatusLineItem
 
 from .manager import DownloadManager
 from .helpers import cook_filename, guess_media_url_ext
