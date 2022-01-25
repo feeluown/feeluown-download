@@ -1,9 +1,9 @@
 import logging
 
 from feeluown.utils import aio
-from fuocore.models import ModelType
-from feeluown.media import Media
+from feeluown.models import ModelType
 from feeluown.gui.helpers import async_run
+from feeluown.media import Media
 from feeluown.gui.widgets.statusline import StatusLineItem
 
 from .manager import DownloadManager
