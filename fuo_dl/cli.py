@@ -1,4 +1,4 @@
-from .downloader import Downloader
+from .py_downloader import Downloader
 from .progress import ConsoleProgress
 
 
