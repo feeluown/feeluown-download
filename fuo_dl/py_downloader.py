@@ -4,7 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import requests
 
-from fuocore import aio
+from feeluown.utils import aio
 from .helpers import Range
 from .base_downloader import Downloader
 
