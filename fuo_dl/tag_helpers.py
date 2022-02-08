@@ -106,7 +106,7 @@ def cook_filepath(tag_obj, ext, fmts):
             filename = '{}.{}'.format(os.path.basename(filename), ext)
             return storage_path, filename
         except Exception as e:
-            logger.warning(e)
+            # logger.warning(e)
             # 没有全部拥有时, 尝试以相同逻辑处理下一fmt, 直至匹配成功
             continue
 
