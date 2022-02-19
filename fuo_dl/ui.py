@@ -65,17 +65,22 @@ class DownloadUi:
             ext = guess_media_url_ext(media_url)
             if self._tag_mgr._name_fmts:
                 song = await aio.run_fn(self._app.library.song_upgrade, song)
-                # FIXME: netease need AlbumModel and ArtistModel for more infos
-                if song.source == 'netease':
-                    from feeluown.library.models import ModelFlags as MF
-                    from fuo_netease.models import NAlbumModel, NArtistModel
-                    if (song.album.meta.flags & MF.v2) and (MF.normal not in song.album.meta.flags):
-                        song.album = await aio.run_fn(NAlbumModel.get, song.album.identifier)
-                    song.artists = [await aio.run_fn(NArtistModel.get, artist.identifier)
-                                    if (artist.meta.flags & MF.v2) and (MF.normal not in artist.meta.flags) else artist
-                                    for artist in song.artists]
-                tag_obj, cover_url = await aio.run_fn(self._tag_mgr.prepare_tag, song)
-                filename = self._tag_mgr.prepare_filename(tag_obj, ext)
+                try:
+                    # FIXME: netease need AlbumModel and ArtistModel for more infos
+                    if song.source == 'netease':
+                        from feeluown.library.models import ModelFlags as MF
+                        from fuo_netease.models import NAlbumModel, NArtistModel
+                        if (song.album.meta.flags & MF.v2) and (MF.normal not in song.album.meta.flags):
+                            song.album = await aio.run_fn(NAlbumModel.get, song.album.identifier)
+                        song.artists = [await aio.run_fn(NArtistModel.get, artist.identifier)
+                                        if (artist.meta.flags & MF.v2) and (MF.normal not in artist.meta.flags) else artist
+                                        for artist in song.artists]
+                    tag_obj, cover_url = await aio.run_fn(self._tag_mgr.prepare_tag, song)
+                    filename = self._tag_mgr.prepare_filename(tag_obj, ext)
+                except Exception:
+                    title = await async_run(lambda: song.title)
+                    artists_name = await async_run(lambda: song.artists_name)
+                    filename = cook_filename(title, artists_name, ext)
             else:
                 title = await async_run(lambda: song.title)
                 artists_name = await async_run(lambda: song.artists_name)
@@ -113,17 +118,22 @@ class DownloadUi:
             ext = guess_media_url_ext(media_url)
             if self._tag_mgr._name_fmts:
                 song = await aio.run_fn(self._app.library.song_upgrade, song)
-                # FIXME: netease need AlbumModel and ArtistModel for more infos
-                if song.source == 'netease':
-                    from feeluown.library.models import ModelFlags as MF
-                    from fuo_netease.models import NAlbumModel, NArtistModel
-                    if (song.album.meta.flags & MF.v2) and (MF.normal not in song.album.meta.flags):
-                        song.album = await aio.run_fn(NAlbumModel.get, song.album.identifier)
-                    song.artists = [await aio.run_fn(NArtistModel.get, artist.identifier)
-                                    if (artist.meta.flags & MF.v2) and (MF.normal not in artist.meta.flags) else artist
-                                    for artist in song.artists]
-                tag_obj, cover_url = await aio.run_fn(self._tag_mgr.prepare_tag, song)
-                filename = self._tag_mgr.prepare_filename(tag_obj, ext)
+                try:
+                    # FIXME: netease need AlbumModel and ArtistModel for more infos
+                    if song.source == 'netease':
+                        from feeluown.library.models import ModelFlags as MF
+                        from fuo_netease.models import NAlbumModel, NArtistModel
+                        if (song.album.meta.flags & MF.v2) and (MF.normal not in song.album.meta.flags):
+                            song.album = await aio.run_fn(NAlbumModel.get, song.album.identifier)
+                        song.artists = [await aio.run_fn(NArtistModel.get, artist.identifier)
+                                        if (artist.meta.flags & MF.v2) and (MF.normal not in artist.meta.flags) else artist
+                                        for artist in song.artists]
+                    tag_obj, cover_url = await aio.run_fn(self._tag_mgr.prepare_tag, song)
+                    filename = self._tag_mgr.prepare_filename(tag_obj, ext)
+                except Exception:
+                    title = await async_run(lambda: song.title)
+                    artists_name = await async_run(lambda: song.artists_name)
+                    filename = cook_filename(title, artists_name, ext)
             else:
                 title = await async_run(lambda: song.title)
                 artists_name = await async_run(lambda: song.artists_name)
