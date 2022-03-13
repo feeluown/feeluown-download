@@ -38,16 +38,21 @@ def cook_tagobj(song, refine_tagobj_func=None):
         'artist': song.artists_name
     }
 
-    if song.album_name.strip():
-        tag_obj['album'] = song.album.name
-        tag_obj['albumartist'] = song.album.artists_name
-        cover_url = song.album.cover
-    else:
-        cover_url = song.artists[0].cover
+    try:
+        if song.album_name.strip():
+            tag_obj['album'] = song.album.name
+            tag_obj['albumartist'] = song.album.artists_name
+            cover_url = song.album.cover
+        else:
+            cover_url = song.artists[0].cover
 
-    if refine_tagobj_func:
-        song_info = refine_tagobj_func(song)
-        tag_obj = dict(tag_obj, **song_info)
+        if refine_tagobj_func:
+            song_info = refine_tagobj_func(song)
+            tag_obj = dict(tag_obj, **song_info)
+
+    except Exception:
+        tag_obj['album'] = song.album_name
+        cover_url = None
 
     return tag_obj, cover_url
 
