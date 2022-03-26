@@ -20,7 +20,7 @@ class TagManager:
 
         self.refine_tagobj_func = None
 
-    def prepare_tag(self, song, album, artists):
+    def prepare_tag(self, song, album=None, artists=[]):
         tag_obj, cover_url = cook_tagobj(song, album, artists, self.refine_tagobj_func)
         tag_obj = beautify_tagobj(tag_obj, self._proc_lans)
         return tag_obj, cover_url

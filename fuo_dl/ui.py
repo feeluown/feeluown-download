@@ -65,15 +65,15 @@ class DownloadUi:
 
             ext = guess_media_url_ext(media_url)
             if self._tag_mgr._name_fmts:
-                if not (hasattr(song, 'state') and song.state is ModelState.cant_upgrade):
+                if hasattr(song, 'state') and song.state is ModelState.cant_upgrade:
+                    # BriefSongModdel
+                    tag_obj, cover_url = await aio.run_fn(self._tag_mgr.prepare_tag, song)
+                else:
                     song = await aio.run_fn(self._app.library.song_upgrade, song)
                     album = await aio.run_fn(self._app.library.album_upgrade, song.album)
                     artists = [await aio.run_fn(self._app.library.artist_upgrade, artist) for artist in
                                song.artists]
-                else:
-                    album = song.album
-                    artists = song.artists
-                tag_obj, cover_url = await aio.run_fn(self._tag_mgr.prepare_tag, song, album, artists)
+                    tag_obj, cover_url = await aio.run_fn(self._tag_mgr.prepare_tag, song, album, artists)
                 filename = self._tag_mgr.prepare_filename(tag_obj, ext)
             is_downloaded = self._mgr.is_file_downloaded(filename)
             if is_downloaded:
@@ -107,14 +107,15 @@ class DownloadUi:
 
             ext = guess_media_url_ext(media_url)
             if self._tag_mgr._name_fmts:
-                if not (hasattr(song, 'state') and song.state is ModelState.cant_upgrade):
+                if hasattr(song, 'state') and song.state is ModelState.cant_upgrade:
+                    # BriefSongModdel
+                    tag_obj, cover_url = await aio.run_fn(self._tag_mgr.prepare_tag, song)
+                else:
                     song = await aio.run_fn(self._app.library.song_upgrade, song)
                     album = await aio.run_fn(self._app.library.album_upgrade, song.album)
                     artists = [await aio.run_fn(self._app.library.artist_upgrade, artist) for artist in
                                song.artists]
-                else:
-                    album = song.album
-                    artists = song.artists
+                    tag_obj, cover_url = await aio.run_fn(self._tag_mgr.prepare_tag, song, album, artists)
                 tag_obj, cover_url = await aio.run_fn(self._tag_mgr.prepare_tag, song, album, artists)
                 filename = self._tag_mgr.prepare_filename(tag_obj, ext)
             else:
