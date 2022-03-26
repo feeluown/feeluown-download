@@ -32,26 +32,26 @@ def beautify_tagobj(tag_obj, lans):
 
 # tag_obj为mutagen中mp3格式下默认的字段，默认支持title/artist/album/albumartist4种字段
 # 使用者也可以通过refine_tagobj_func增加更多如tracknumber/discnumber/genre/date等
-def cook_tagobj(song, refine_tagobj_func=None):
+def cook_tagobj(song, album, artists, refine_tagobj_func=None):
     tag_obj = {
         'title': song.title,
         'artist': song.artists_name
     }
 
     try:
-        if song.album_name.strip():
-            tag_obj['album'] = song.album.name
-            tag_obj['albumartist'] = song.album.artists_name
-            cover_url = song.album.cover
+        if album.name.strip():
+            tag_obj['album'] = album.name
+            tag_obj['albumartist'] = album.artists_name
+            cover_url = album.cover
         else:
-            cover_url = song.artists[0].cover
+            cover_url = artists[0].cover
 
         if refine_tagobj_func:
             song_info = refine_tagobj_func(song)
             tag_obj = dict(tag_obj, **song_info)
 
     except Exception:
-        tag_obj['album'] = song.album_name
+        tag_obj['album'] = album.name
         cover_url = None
 
     return tag_obj, cover_url
@@ -116,8 +116,8 @@ def cook_filepath(tag_obj, ext, fmts):
             continue
 
 
-def prepare_filename(song, ext, lans, fmts, extra_func=None):
-    tag_obj, cover_url = cook_tagobj(song, extra_func)
+def prepare_filename(song, album, artists, ext, lans, fmts, extra_func=None):
+    tag_obj, cover_url = cook_tagobj(song, album, artists, extra_func)
     tag_obj = beautify_tagobj(tag_obj, lans)
 
     storage_path, filename = cook_filepath(tag_obj, ext, fmts)
