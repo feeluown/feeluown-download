@@ -32,22 +32,27 @@ def beautify_tagobj(tag_obj, lans):
 
 # tag_obj为mutagen中mp3格式下默认的字段，默认支持title/artist/album/albumartist4种字段
 # 使用者也可以通过refine_tagobj_func增加更多如tracknumber/discnumber/genre/date等
-def cook_tagobj(song, refine_tagobj_func=None):
+def cook_tagobj(song, album, artists, refine_tagobj_func=None):
     tag_obj = {
         'title': song.title,
         'artist': song.artists_name
     }
 
-    if song.album_name.strip():
-        tag_obj['album'] = song.album.name
-        tag_obj['albumartist'] = song.album.artists_name
-        cover_url = song.album.cover
-    else:
-        cover_url = song.artists[0].cover
+    if album and artists:
+        if album.name.strip():
+            tag_obj['album'] = album.name
+            tag_obj['albumartist'] = album.artists_name
+            cover_url = album.cover
+        else:
+            cover_url = artists[0].cover
 
-    if refine_tagobj_func:
-        song_info = refine_tagobj_func(song)
-        tag_obj = dict(tag_obj, **song_info)
+        if refine_tagobj_func:
+            song_info = refine_tagobj_func(song)
+            tag_obj = dict(tag_obj, **song_info)
+
+    else:
+        tag_obj['album'] = song.album_name
+        cover_url = None
 
     return tag_obj, cover_url
 
@@ -105,14 +110,14 @@ def cook_filepath(tag_obj, ext, fmts):
             storage_path = os.path.dirname(filename)
             filename = '{}.{}'.format(os.path.basename(filename), ext)
             return storage_path, filename
-        except Exception as e:
-            logger.warning(e)
+        except Exception:
+            # logger.warning(e)
             # 没有全部拥有时, 尝试以相同逻辑处理下一fmt, 直至匹配成功
             continue
 
 
-def prepare_filename(song, ext, lans, fmts, extra_func=None):
-    tag_obj, cover_url = cook_tagobj(song, extra_func)
+def prepare_filename(song, album, artists, ext, lans, fmts, extra_func=None):
+    tag_obj, cover_url = cook_tagobj(song, album, artists, extra_func)
     tag_obj = beautify_tagobj(tag_obj, lans)
 
     storage_path, filename = cook_filepath(tag_obj, ext, fmts)

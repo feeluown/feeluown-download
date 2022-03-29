@@ -2,6 +2,7 @@ import logging
 
 from feeluown.utils import aio
 from feeluown.models import ModelType
+from feeluown.library.model_state import ModelState
 from feeluown.gui.helpers import async_run
 from feeluown.media import Media
 from feeluown.gui.widgets.statusline import StatusLineItem
@@ -63,15 +64,17 @@ class DownloadUi:
                 return
 
             ext = guess_media_url_ext(media_url)
-            # FIXME: netease need AlbumModel and ArtistModel for more infos
-            if False:
-                song = await aio.run_fn(self._app.library.song_upgrade, song)
-                tag_obj, cover_url = await aio.run_fn(self._tag_mgr.prepare_tag, song)
+            if self._tag_mgr._name_fmts:
+                if hasattr(song, 'state') and song.state is ModelState.cant_upgrade:
+                    # BriefSongModdel
+                    tag_obj, cover_url = await aio.run_fn(self._tag_mgr.prepare_tag, song)
+                else:
+                    song = await aio.run_fn(self._app.library.song_upgrade, song)
+                    album = await aio.run_fn(self._app.library.album_upgrade, song.album)
+                    artists = [await aio.run_fn(self._app.library.artist_upgrade, artist) for artist in
+                               song.artists]
+                    tag_obj, cover_url = await aio.run_fn(self._tag_mgr.prepare_tag, song, album, artists)
                 filename = self._tag_mgr.prepare_filename(tag_obj, ext)
-            else:
-                title = await async_run(lambda: song.title)
-                artists_name = await async_run(lambda: song.artists_name)
-                filename = cook_filename(title, artists_name, ext)
             is_downloaded = self._mgr.is_file_downloaded(filename)
             if is_downloaded:
                 self.cur_song_dl_btn.setEnabled(False)
@@ -104,21 +107,30 @@ class DownloadUi:
 
             ext = guess_media_url_ext(media_url)
             if self._tag_mgr._name_fmts:
-                # FIXME: netease need AlbumModel and ArtistModel for more infos
-                song = await aio.run_fn(self._app.library.song_upgrade, song)
-                tag_obj, cover_url = await aio.run_fn(self._tag_mgr.prepare_tag, song)
+                if hasattr(song, 'state') and song.state is ModelState.cant_upgrade:
+                    # BriefSongModdel
+                    tag_obj, cover_url = await aio.run_fn(self._tag_mgr.prepare_tag, song)
+                else:
+                    song = await aio.run_fn(self._app.library.song_upgrade, song)
+                    album = await aio.run_fn(self._app.library.album_upgrade, song.album)
+                    artists = [await aio.run_fn(self._app.library.artist_upgrade, artist) for artist in
+                               song.artists]
+                    tag_obj, cover_url = await aio.run_fn(self._tag_mgr.prepare_tag, song, album, artists)
+                tag_obj, cover_url = await aio.run_fn(self._tag_mgr.prepare_tag, song, album, artists)
                 filename = self._tag_mgr.prepare_filename(tag_obj, ext)
             else:
                 title = await async_run(lambda: song.title)
                 artists_name = await async_run(lambda: song.artists_name)
                 filename = cook_filename(title, artists_name, ext)
-            if self._mgr.is_file_downloaded(filename):
+            is_downloaded = self._mgr.is_file_downloaded(filename)
+            if is_downloaded:
                 logger.info(f'download {filename} has exists')
                 return
 
             logger.info(f'download {media_url} into {filename}')
             file_path = await self._mgr.get(media_url, filename)
-            if self._tag_mgr._name_fmts and file_path:
+
+            if self._tag_mgr._name_fmts and file_path and cover_url:
                 self._tag_mgr.put_f(filename, file_path, tag_obj, cover_url)
         else:
             # this should not happen, so we log a error msg
