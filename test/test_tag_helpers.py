@@ -9,7 +9,6 @@ def test_beautify_tagobj():
 
 
 def test_cook_tagobj():
-    song = object()
     artist = DummyArtistModel(identifier=1,
                               name='artist_name',
                               cover='cover_url')
