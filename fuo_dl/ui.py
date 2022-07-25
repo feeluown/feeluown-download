@@ -75,6 +75,10 @@ class DownloadUi:
                                song.artists]
                     tag_obj, cover_url = await aio.run_fn(self._tag_mgr.prepare_tag, song, album, artists)
                 filename = self._tag_mgr.prepare_filename(tag_obj, ext)
+            else:
+                title = await async_run(lambda: song.title)
+                artists_name = await async_run(lambda: song.artists_name)
+                filename = cook_filename(title, artists_name, ext)
             is_downloaded = self._mgr.is_file_downloaded(filename)
             if is_downloaded:
                 self.cur_song_dl_btn.setEnabled(False)
