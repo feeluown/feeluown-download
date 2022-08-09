@@ -142,6 +142,7 @@ class DownloadUi:
 
     def _add_download_action(self, ctx):
         def download(models):
+            # Note that these models may be the same.
             for model in set(models):
                 if model.meta.model_type == ModelType.song:
                     logger.info(f'add download task: {model}')
