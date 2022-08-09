@@ -142,7 +142,8 @@ class DownloadUi:
 
     def _add_download_action(self, ctx):
         def download(models):
-            for model in models:
+            # Note that these models may be the same.
+            for model in set(models):
                 if model.meta.model_type == ModelType.song:
                     logger.info(f'add download task: {model}')
                     aio.create_task(self.download_song(model))
