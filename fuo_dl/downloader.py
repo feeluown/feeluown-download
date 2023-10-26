@@ -1,18 +1,53 @@
+import os
 import logging
 import threading
 from concurrent.futures import ThreadPoolExecutor
+from enum import Enum
 
 import requests
-
 from feeluown.utils import aio
+from feeluown.media import Media
+
 from .helpers import Range
-from .base_downloader import Downloader
 
 logger = logging.getLogger(__name__)
 
 
 class InvalidUrl(Exception):
     pass
+
+
+class Downloader:
+    async def run(self, media: Media, filepath, **kwargs):
+        """
+        :return: true if successed
+        """
+
+    def clean(self, filepath):
+        if os.path.exists(filepath):
+            try:
+                os.remove(filepath)
+            except:  # noqa
+                logger.exception(f'remove {filepath} failed, this should not happen')
+            else:
+                logger.info('download file faield, remove the tmp file')
+
+
+class DownloadStatus(Enum):
+    pending = 'pending'
+    running = 'running'
+    ok = 'ok'
+    failed = 'failed'
+
+
+class DownloadTask:
+    def __init__(self, media: Media, filename, downloader):
+        self.url = media.url
+        self.media = media
+        self.filename = filename
+
+        self.downloader: Downloader = downloader
+        self.status: DownloadStatus = DownloadStatus.pending
 
 
 def divide(length, segment_size):
@@ -31,12 +66,8 @@ def divide(length, segment_size):
 
 
 class FileDownloadTask:
-    def __init__(self, url, filename, progress_cb=None):
-        self.url = url
-        # 部分资源地址需要加上 User-Agent 参数才可以访问
-        self.headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2)'
-                                      ' AppleWebKit/537.36 (KHTML, like Gecko)'
-                                      ' Chrome/33.0.1750.152 Safari/537.36'}
+    def __init__(self, media: Media, filename, progress_cb=None):
+        self.media = media
         self.filename = filename
         self.seek_write_lock = threading.Lock()
 
@@ -49,24 +80,36 @@ class FileDownloadTask:
 
         self._dl()
 
+    def _get_http_kwargs(self):
+        if self.media.http_proxy:
+            proxies = {
+                'http': self.media.http_proxy,
+                'https': self.media.http_proxy,
+            }
+        else:
+            proxies = None
+        return dict(proxies=proxies, headers=self.media.http_headers or {})
+
     def _get_length(self):
         """发送 HEAD 请求，尝试获取文件大小
 
         如果能获取，则返回长度，否则返回 None，遇到时错误抛出异常。
         """
-        resp = self.http.head(self.url, headers=self.headers, timeout=1)
+        url = self.media.url
+        resp = self.http.head(url, timeout=3, **self._get_http_kwargs())
         status_code = resp.status_code
         if status_code >= 400:
             logger.warning('Get file length failed, status:%d', status_code)
             if status_code == 403:
-                logger.warning('It seems that the url:%s is expired', self.url)
+                logger.warning('It seems that the url:%s is expired', url)
             raise InvalidUrl("Head request failed, status:{}".format(status_code))
+        print(resp.headers)
         if 200 <= status_code < 300:
             length = int(resp.headers.get('content-length'))
             return length
 
     def _dl(self):
-        url = self.url
+        url = self.media.url
         executor = self.executor
 
         length = self._get_length()
@@ -83,8 +126,9 @@ class FileDownloadTask:
     def _dl_range(self, f, url, start, end, length):
         http = self.http
         headers = {'Range': Range('bytes', [(start, end)]).to_header()}
-        headers.update(self.headers)
-        resp = http.get(url, headers=headers, stream=True, timeout=5)
+        http_kwargs = self._get_http_kwargs()
+        headers.update(http_kwargs.pop('headers', {}))
+        resp = http.get(url, headers=headers, stream=True, timeout=5, **http_kwargs)
         size = 0
         for chunk in resp.iter_content(1024 * 8):
             with self.seek_write_lock:
@@ -103,15 +147,15 @@ class RequestsDownloader:
         self.dl_executor = ThreadPoolExecutor(max_workers=max_workers)
         self.dl_range_executor = ThreadPoolExecutor(max_workers=5)
 
-    def create_task(self, url, filename, http=None, progress_cb=None):
-        task = FileDownloadTask(url, filename, progress_cb=progress_cb)
+    def create_task(self, media, filename, http=None, progress_cb=None):
+        task = FileDownloadTask(media, filename, progress_cb=progress_cb)
         return self.dl_executor.submit(
             task.run, self.dl_range_executor, http or requests)
 
 
 class AioRequestsDownloader(Downloader):
-    async def run(self, url, filepath, **kwargs):
-        task = FileDownloadTask(url, filepath, progress_cb=None)
+    async def run(self, media, filepath, **_):
+        task = FileDownloadTask(media, filepath, progress_cb=None)
         with ThreadPoolExecutor(max_workers=10) as dl_range_executor:
             # FIXME: 理论上不应该使用默认的 executor，因为下载很可能阻塞其它任务
             await aio.run_in_executor(None,

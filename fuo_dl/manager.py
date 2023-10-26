@@ -7,9 +7,9 @@ from typing import List
 from feeluown.utils import aio
 from feeluown.utils.dispatch import Signal
 from feeluown.consts import SONG_DIR as DEFAULT_DOWNLOAD_DIR
-from .task import DownloadTask, DownloadStatus
-from .base_downloader import Downloader, CurlDownloader  # noqa
-from .py_downloader import AioRequestsDownloader  # noqa
+from feeluown.media import Media
+
+from .downloader import Downloader, AioRequestsDownloader, DownloadTask, DownloadStatus
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +20,7 @@ class DownloadManager:
 
         :type app: feeluown.app.App
         """
+        self._app = app
         self._tasks = []
         self._task_queue = asyncio.Queue()
 
@@ -36,12 +37,7 @@ class DownloadManager:
     def list_tasks(self) -> List[DownloadTask]:
         return self._tasks
 
-    async def get(self, url, filename, headers=None, cookies=None):
-        """download and save a file
-
-        :param url: file url
-        :param filename: target file name
-        """
+    async def get_media(self, media, filename):
         # check if there exists same task
         for task in self.list_tasks():
             if task.filename == filename:
@@ -53,12 +49,20 @@ class DownloadManager:
         if not os.path.exists(dirpath):
             os.makedirs(dirpath)
 
-        task = DownloadTask(url, filename, self.downloader)
+        task = DownloadTask(media, filename, self.downloader)
         self._tasks.append(task)
         await self._task_queue.put(task)
         self.tasks_changed.emit(self.list_tasks())
         logger.info(f'task: {filename} has been put into queue')
         return filepath
+
+    async def get(self, url, filename):
+        """download and save a file
+
+        :param url: file url
+        :param filename: target file name
+        """
+        await self.get_media(Media(url), filename)
 
     async def worker(self):
         while True:
@@ -70,19 +74,14 @@ class DownloadManager:
             self._tasks.remove(task)
             self.tasks_changed.emit(self.list_tasks())
 
-            path = self._getpath(task.filename)
-            logger.info(f'content has been saved into {path}')
-
-            self.download_finished.emit(task.filename, True)
-
-    async def run_task(self, task):
+    async def run_task(self, task: DownloadTask):
         task.status = DownloadStatus.running
         filename = task.filename
         downloader = task.downloader
 
         filepath = self._getpath(filename)
         try:
-            ok = await downloader.run(task.url, filepath)
+            ok = await downloader.run(task.media, filepath)
         except asyncio.CancelledError:
             task.status = DownloadStatus.failed
         except Exception:
@@ -98,6 +97,10 @@ class DownloadManager:
         if task.status is DownloadStatus.failed:
             downloader.clean(filepath)
             self.download_finished.emit(filename, False)
+            logger.info(f'download content into {filename} failed')
+        else:
+            path = self._getpath(task.filename)
+            logger.info(f'content has been saved into {path}')
 
     def is_file_downloaded(self, filename):
         return os.path.exists(self._getpath(filename))

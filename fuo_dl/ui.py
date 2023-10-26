@@ -90,7 +90,6 @@ class DownloadUi:
         aio.create_task(func(media))
 
     def _download_cur_media(self):
-
         song = self._app.playlist.current_song
         if song is None:
             return
@@ -101,7 +100,6 @@ class DownloadUi:
             self._app.library.song_prepare_media,
             song,
             self._app.playlist.audio_select_policy)
-        media = Media(media)
         media_url = media.url
         if media_url:
             if not media_url.startswith('http'):
@@ -132,7 +130,7 @@ class DownloadUi:
                 return
 
             logger.info(f'download {media_url} into {filename}')
-            file_path = await self._mgr.get(media_url, filename)
+            file_path = await self._mgr.get(media, filename)
 
             if self._tag_mgr._name_fmts and file_path and cover_url:
                 self._tag_mgr.put_f(filename, file_path, tag_obj, cover_url)
