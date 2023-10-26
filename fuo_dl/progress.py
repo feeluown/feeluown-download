@@ -20,7 +20,7 @@ class ConsoleProgress:
             fill_pos = set()
             s_points = set()
             e_points = set()
-            print('\rDownload Progress: ', end='')
+            print("\rDownload Progress: ", end="")
             for r, c in progress.items():
                 s, e = r
                 finished += c - s
@@ -33,9 +33,9 @@ class ConsoleProgress:
                     i1 += 1
             for num in range(0, total + 1):
                 c = fill if num in fill_pos else not_fill
-                print(c, end='')
+                print(c, end="")
             percent = int(finished / length * 100)
-            print(' {}%'.format(percent), end='')
+            print(" {}%".format(percent), end="")
             sys.stdout.flush()
             if finished == length and s_points ^ e_points == {0, length}:
-                print('\n')
+                print("\n")

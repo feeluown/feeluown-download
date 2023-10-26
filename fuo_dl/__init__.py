@@ -14,9 +14,9 @@ import logging
 from .manager import DownloadManager
 from .tag_manager import TagManager
 
-__alias__ = '音乐下载'
+__alias__ = "音乐下载"
 __desc__ = __doc__
-__version__ = '0.1'
+__version__ = "0.1"
 
 
 logger = logging.getLogger(__name__)
@@ -28,12 +28,12 @@ dm_ui = None
 
 
 def init_config(config):
-    config.deffield('DOWNLOAD_DIR', type_=str, default='', desc='')
+    config.deffield("DOWNLOAD_DIR", type_=str, default="", desc="")
     # CORE_LANGUAGE: 写入tag的语言类型, auto/ch/tc: 不进行转换/强制转简体中文/强制转繁体中文
-    config.deffield('CORE_LANGUAGE', type_=str, default='auto', desc='')
+    config.deffield("CORE_LANGUAGE", type_=str, default="auto", desc="")
     # NAME_FORMATS: 以关键字段为标识的命名方式(根据优先级排序的列表), 目前仅支持 albumartist/album/artist/title/track五种字段
     # eg. ['{albumartist}/{album}/{track} {title}', '{albumartist}/{album}/{title}', '{artist}/{title}']
-    config.deffield('NAME_FORMATS', type_=list, default=[], desc='')
+    config.deffield("NAME_FORMATS", type_=list, default=[], desc="")
 
 
 def enable(app):

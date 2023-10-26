@@ -12,7 +12,7 @@ class DownloadLabel(StatuslineLabel):
 
         self._timer = QTimer(self)
         self._downloading = False
-        self._status_color = 'orange'
+        self._status_color = "orange"
 
         self._timer.timeout.connect(self._on_timer_timeout)
         self._timer.start(1000)
@@ -64,8 +64,9 @@ class DownloadLabel(StatuslineLabel):
         angle = 40
         translate_x = inner_width // 2
         translate_y = vertical_line_bottom_y
-        side_line_rect = QRect(-side_line_width//2, -side_line_height,
-                               side_line_width, side_line_height)
+        side_line_rect = QRect(
+            -side_line_width // 2, -side_line_height, side_line_width, side_line_height
+        )
         painter.translate(translate_x, translate_y)
         painter.rotate(-angle)
         painter.drawRoundedRect(side_line_rect, line_radius, line_radius)
@@ -79,13 +80,17 @@ class DownloadLabel(StatuslineLabel):
         bottom_lr_height = 4
         bottom_line_y = inner_height - 2
         bottom_line_width = inner_width - margin_left * 2
-        bottom_line_rect = QRect(margin_left, bottom_line_y,
-                                 bottom_line_width, bottom_line_height)
+        bottom_line_rect = QRect(
+            margin_left, bottom_line_y, bottom_line_width, bottom_line_height
+        )
         bottom_lr_y = bottom_line_y - bottom_lr_height + bottom_line_height
-        bottom_left_rect = QRect(margin_left, bottom_lr_y,
-                                 line_width, bottom_lr_height)
-        bottom_right_rect = QRect(margin_left+bottom_line_width-line_width, bottom_lr_y,
-                                  line_width, bottom_lr_height)
+        bottom_left_rect = QRect(margin_left, bottom_lr_y, line_width, bottom_lr_height)
+        bottom_right_rect = QRect(
+            margin_left + bottom_line_width - line_width,
+            bottom_lr_y,
+            line_width,
+            bottom_lr_height,
+        )
         painter.drawRoundedRect(bottom_line_rect, 2, 2)
         painter.drawRoundedRect(bottom_left_rect, 2, 2)
         painter.drawRoundedRect(bottom_right_rect, 2, 2)
@@ -95,7 +100,7 @@ class DownloadLabel(StatuslineLabel):
             super().drawStatus(painter)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from unittest.mock import MagicMock
     from PyQt5.QtWidgets import QApplication
 

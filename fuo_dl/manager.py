@@ -41,7 +41,7 @@ class DownloadManager:
         # check if there exists same task
         for task in self.list_tasks():
             if task.filename == filename:
-                logger.warning(f'task: {filename} has already been put into queue')
+                logger.warning(f"task: {filename} has already been put into queue")
                 return
 
         filepath = self._getpath(filename)
@@ -53,7 +53,7 @@ class DownloadManager:
         self._tasks.append(task)
         await self._task_queue.put(task)
         self.tasks_changed.emit(self.list_tasks())
-        logger.info(f'task: {filename} has been put into queue')
+        logger.info(f"task: {filename} has been put into queue")
         return filepath
 
     async def get(self, url, filename):
@@ -85,7 +85,7 @@ class DownloadManager:
         except asyncio.CancelledError:
             task.status = DownloadStatus.failed
         except Exception:
-            logger.exception('download failed')
+            logger.exception("download failed")
             task.status = DownloadStatus.failed
         else:
             if ok:
@@ -97,10 +97,10 @@ class DownloadManager:
         if task.status is DownloadStatus.failed:
             downloader.clean(filepath)
             self.download_finished.emit(filename, False)
-            logger.info(f'download content into {filename} failed')
+            logger.info(f"download content into {filename} failed")
         else:
             path = self._getpath(task.filename)
-            logger.info(f'content has been saved into {path}')
+            logger.info(f"content has been saved into {path}")
 
     def is_file_downloaded(self, filename):
         return os.path.exists(self._getpath(filename))

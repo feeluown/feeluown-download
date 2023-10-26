@@ -18,8 +18,7 @@ class ContentRange(object):
     """
 
     def __init__(self, units, start, stop, length=None, on_update=None):
-        assert is_byte_range_valid(start, stop, length), \
-            'Bad range provided'
+        assert is_byte_range_valid(start, stop, length), "Bad range provided"
         self.on_update = on_update
         self.set(start, stop, length, units)
 
@@ -31,22 +30,22 @@ class ContentRange(object):
             setattr(self, name, value)
             if self.on_update is not None:
                 self.on_update(self)
+
         return property(fget, fset)
 
     #: The units to use, usually "bytes"
-    units = _callback_property('_units')
+    units = _callback_property("_units")
     #: The start point of the range or `None`.
-    start = _callback_property('_start')
+    start = _callback_property("_start")
     #: The stop point of the range (non-inclusive) or `None`.  Can only be
     #: `None` if also start is `None`.
-    stop = _callback_property('_stop')
+    stop = _callback_property("_stop")
     #: The length of the range or `None`.
-    length = _callback_property('_length')
+    length = _callback_property("_length")
 
-    def set(self, start, stop, length=None, units='bytes'):
+    def set(self, start, stop, length=None, units="bytes"):
         """Simple method to update the ranges."""
-        assert is_byte_range_valid(start, stop, length), \
-            'Bad range provided'
+        assert is_byte_range_valid(start, stop, length), "Bad range provided"
         self._units = units
         self._start = start
         self._stop = stop
@@ -62,19 +61,14 @@ class ContentRange(object):
 
     def to_header(self):
         if self.units is None:
-            return ''
+            return ""
         if self.length is None:
-            length = '*'
+            length = "*"
         else:
             length = self.length
         if self.start is None:
-            return '%s */%s' % (self.units, length)
-        return '%s %s-%s/%s' % (
-            self.units,
-            self.start,
-            self.stop - 1,
-            length
-        )
+            return "%s */%s" % (self.units, length)
+        return "%s %s-%s/%s" % (self.units, self.start, self.stop - 1, length)
 
     def __nonzero__(self):
         return self.units is not None
@@ -85,7 +79,7 @@ class ContentRange(object):
         return self.to_header()
 
     def __repr__(self):
-        return '<%s %r>' % (self.__class__.__name__, str(self))
+        return "<%s %r>" % (self.__class__.__name__, str(self))
 
 
 class Range(object):
@@ -109,7 +103,7 @@ class Range(object):
         exactly one range and it is satisfiable it returns a ``(start, stop)``
         tuple, otherwise `None`.
         """
-        if self.units != 'bytes' or length is None or len(self.ranges) != 1:
+        if self.units != "bytes" or length is None or len(self.ranges) != 1:
             return None
         start, end = self.ranges[0]
         if end is None:
@@ -132,10 +126,10 @@ class Range(object):
         ranges = []
         for begin, end in self.ranges:
             if end is None:
-                ranges.append(begin >= 0 and '%s-' % begin or str(begin))
+                ranges.append(begin >= 0 and "%s-" % begin or str(begin))
             else:
-                ranges.append('%s-%s' % (begin, end - 1))
-        return '%s=%s' % (self.units, ','.join(ranges))
+                ranges.append("%s-%s" % (begin, end - 1))
+        return "%s=%s" % (self.units, ",".join(ranges))
 
     def to_content_range_header(self, length):
         """Converts the object into `Content-Range` HTTP header,
@@ -143,16 +137,19 @@ class Range(object):
         """
         range_for_length = self.range_for_length(length)
         if range_for_length is not None:
-            return '%s %d-%d/%d' % (self.units,
-                                    range_for_length[0],
-                                    range_for_length[1] - 1, length)
+            return "%s %d-%d/%d" % (
+                self.units,
+                range_for_length[0],
+                range_for_length[1] - 1,
+                length,
+            )
         return None
 
     def __str__(self):
         return self.to_header()
 
     def __repr__(self):
-        return '<%s %r>' % (self.__class__.__name__, str(self))
+        return "<%s %r>" % (self.__class__.__name__, str(self))
 
 
 def is_byte_range_valid(start, stop, length):
@@ -179,19 +176,19 @@ def parse_range_header(value, make_inclusive=True):
 
     .. versionadded:: 0.7
     """
-    if not value or '=' not in value:
+    if not value or "=" not in value:
         return None
 
     ranges = []
     last_end = 0
-    units, rng = value.split('=', 1)
+    units, rng = value.split("=", 1)
     units = units.strip().lower()
 
-    for item in rng.split(','):
+    for item in rng.split(","):
         item = item.strip()
-        if '-' not in item:
+        if "-" not in item:
             return None
-        if item.startswith('-'):
+        if item.startswith("-"):
             if last_end < 0:
                 return None
             try:
@@ -200,8 +197,8 @@ def parse_range_header(value, make_inclusive=True):
                 return None
             end = None
             last_end = -1
-        elif '-' in item:
-            begin, end = item.split('-', 1)
+        elif "-" in item:
+            begin, end = item.split("-", 1)
             begin = begin.strip()
             end = end.strip()
             if not begin.isdigit():
@@ -238,26 +235,26 @@ def parse_content_range_header(value, on_update=None):
     if value is None:
         return None
     try:
-        units, rangedef = (value or '').strip().split(None, 1)
+        units, rangedef = (value or "").strip().split(None, 1)
     except ValueError:
         return None
 
-    if '/' not in rangedef:
+    if "/" not in rangedef:
         return None
-    rng, length = rangedef.split('/', 1)
-    if length == '*':
+    rng, length = rangedef.split("/", 1)
+    if length == "*":
         length = None
     elif length.isdigit():
         length = int(length)
     else:
         return None
 
-    if rng == '*':
+    if rng == "*":
         return ContentRange(units, None, None, length, on_update=on_update)
-    elif '-' not in rng:
+    elif "-" not in rng:
         return None
 
-    start, stop = rng.split('-', 1)
+    start, stop = rng.split("-", 1)
     try:
         start = int(start)
         stop = int(stop) + 1
@@ -269,7 +266,7 @@ def parse_content_range_header(value, on_update=None):
 
 
 def cook_filename(title, artists_name, ext):
-    return f'{title} - {artists_name}.{ext}'
+    return f"{title} - {artists_name}.{ext}"
 
 
 def guess_media_url_ext(url):
@@ -279,8 +276,8 @@ def guess_media_url_ext(url):
     return mp3 when parsing failed
     """
     result = urlparse(url)
-    filename = result.path.rsplit('/', 1)[-1]
-    parts = filename.rsplit('.', 1)
+    filename = result.path.rsplit("/", 1)[-1]
+    parts = filename.rsplit(".", 1)
     if len(parts) > 1:
         return parts[1]
-    return 'mp3'
+    return "mp3"
