@@ -62,7 +62,7 @@ class DownloadManager:
         :param url: file url
         :param filename: target file name
         """
-        await self.get_media(Media(url), filename)
+        return await self.get_media(Media(url), filename)
 
     async def worker(self):
         while True:
