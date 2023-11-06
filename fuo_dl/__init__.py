@@ -49,6 +49,7 @@ def enable_v2(app):
 
     if app.mode & app.GuiMode:
         from fuo_dl.v2.ui import UI
+
         ui = UI(app)
         ui.download_mgr.initialize()
         dm_ui_v2 = ui
@@ -57,7 +58,6 @@ def enable_v2(app):
 def enable(app):
     if app.config.dl.ENABLE_V2:
         return enable_v2(app)
-
 
     global dm_mgr, dm_ui, tg_mgr
 

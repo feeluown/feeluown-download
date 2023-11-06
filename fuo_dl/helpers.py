@@ -22,7 +22,6 @@ class ContentRange(object):
         self.set(start, stop, length, units)
 
     def _callback_property(name):
-
         def fget(self):
             return getattr(self, name)
 

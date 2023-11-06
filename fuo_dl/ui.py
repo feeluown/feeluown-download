@@ -72,9 +72,7 @@ class DownloadUi:
                     )
                 else:
                     song = await aio.run_fn(self._app.library.song_upgrade, song)
-                    album = await aio.run_fn(
-                        self._app.library.album_upgrade, song.album
-                    )
+                    album = await aio.run_fn(self._app.library.album_upgrade, song.album)
                     artists = [
                         await aio.run_fn(self._app.library.artist_upgrade, artist)
                         for artist in song.artists
@@ -125,9 +123,7 @@ class DownloadUi:
                     )
                 else:
                     song = await aio.run_fn(self._app.library.song_upgrade, song)
-                    album = await aio.run_fn(
-                        self._app.library.album_upgrade, song.album
-                    )
+                    album = await aio.run_fn(self._app.library.album_upgrade, song.album)
                     artists = [
                         await aio.run_fn(self._app.library.artist_upgrade, artist)
                         for artist in song.artists
