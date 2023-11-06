@@ -17,9 +17,7 @@ def set_tag_info_flac(f_path, tag_info, cover_data=None):
             "/"
         )
     if tag_info.get("discnumber"):
-        tag_info["discnumber"], tag_info["disctotal"] = tag_info["discnumber"].split(
-            "/"
-        )
+        tag_info["discnumber"], tag_info["disctotal"] = tag_info["discnumber"].split("/")
 
     audio = FLAC(f_path)
     audio.delete()

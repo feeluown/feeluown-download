@@ -101,7 +101,6 @@ class FileDownloadTask:
             if status_code == 403:
                 logger.warning("It seems that the url:%s is expired", url)
             raise InvalidUrl("Head request failed, status:{}".format(status_code))
-        print(resp.headers)
         if 200 <= status_code < 300:
             length = int(resp.headers.get("content-length"))
             return length

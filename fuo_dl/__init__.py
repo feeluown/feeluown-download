@@ -11,6 +11,7 @@ fuo_dl 支持多首歌并行下载，也支持一首歌分多段并行下载（�
 
 import logging
 
+from feeluown.consts import SONG_DIR as DEFAULT_DOWNLOAD_DIR
 from .manager import DownloadManager
 from .tag_manager import TagManager
 
@@ -26,17 +27,38 @@ dm_mgr = None
 tg_mgr = None
 dm_ui = None
 
+# keep a reference to the UI instance, so that the install will not be deleted.
+dm_ui_v2 = None
+
 
 def init_config(config):
-    config.deffield("DOWNLOAD_DIR", type_=str, default="", desc="")
+    config.deffield("DOWNLOAD_DIR", type_=str, default=DEFAULT_DOWNLOAD_DIR, desc="")
     # CORE_LANGUAGE: 写入tag的语言类型, auto/ch/tc: 不进行转换/强制转简体中文/强制转繁体中文
     config.deffield("CORE_LANGUAGE", type_=str, default="auto", desc="")
     # NAME_FORMATS: 以关键字段为标识的命名方式(根据优先级排序的列表), 目前仅支持 albumartist/album/artist/title/track五种字段
     # eg. ['{albumartist}/{album}/{track} {title}', '{albumartist}/{album}/{title}', '{artist}/{title}']
     config.deffield("NAME_FORMATS", type_=list, default=[], desc="")
 
+    # V2 的功能预期和之前（V1）一样，V1 的功能比较丰富，但代码层面比较复杂。
+    # V2 只会兼容最新的 Model 设计，这样代码会简单很多。
+    config.deffield("ENABLE_V2", type_=bool, default=False)
+
+
+def enable_v2(app):
+    global dm_ui_v2
+
+    if app.mode & app.GuiMode:
+        from fuo_dl.v2.ui import UI
+
+        ui = UI(app)
+        ui.download_mgr.initialize()
+        dm_ui_v2 = ui
+
 
 def enable(app):
+    if app.config.dl.ENABLE_V2:
+        return enable_v2(app)
+
     global dm_mgr, dm_ui, tg_mgr
 
     # initialize download manager

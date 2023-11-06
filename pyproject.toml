@@ -1,0 +1,35 @@
+[project]
+name = "fuo_dl"
+authors = [{name = "Cosven"}]
+readme = "README.md"
+license = {file = "LICENSE"}
+dynamic = ["version", "description"]
+
+dependencies = [
+    "feeluown",
+    "requests",
+    "mutagen>=1.37",
+]
+
+classifiers=[
+    'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3 :: Only',
+]
+
+[project.urls]
+Source = "https://github.com/feeluown/feeluown-download"
+
+[project.optional-dependencies]
+dev = [
+    "black",  # code formatter
+]
+
+[project.entry-points."fuo.plugins_v1"]
+download = "fuo_dl"
+
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.black]
+line-length = 89
