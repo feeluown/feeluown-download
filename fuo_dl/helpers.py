@@ -11,7 +11,6 @@ from urllib.parse import urlparse
 
 
 class ContentRange(object):
-
     """Represents the content range header.
 
     .. versionadded:: 0.7
@@ -23,6 +22,7 @@ class ContentRange(object):
         self.set(start, stop, length, units)
 
     def _callback_property(name):
+
         def fget(self):
             return getattr(self, name)
 
@@ -83,7 +83,6 @@ class ContentRange(object):
 
 
 class Range(object):
-
     """Represents a range header.  All the methods are only supporting bytes
     as unit.  It does store multiple ranges but :meth:`range_for_length` will
     only work if only one range is provided.
