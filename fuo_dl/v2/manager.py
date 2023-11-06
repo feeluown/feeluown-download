@@ -62,6 +62,9 @@ class DownloadManager:
         n_song = await run_fn(self._app.library.song_upgrade, song)
         filename = await self._get_filename(n_song, media)
         filepath = os.path.join(self._path, filename)
+        if os.path.exists(filepath):
+            self._app.show_msg(f"文件已经存在：{filepath}")
+            return
 
         task = DownloadTask(n_song, media, filepath)
         self._app.show_msg(f"下载任务已经提交成功：{s(n_song)}")

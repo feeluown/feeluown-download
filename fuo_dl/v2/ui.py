@@ -23,15 +23,16 @@ class UI:
 
         self._ui.songs_table.about_to_show_menu.connect(self._add_download_action)
         self._ui.bottom_panel.status_line.add_item(
-            StatusLineItem("download",
-                           DownloadLabel(self._app, self.download_mgr.worker)))
+            StatusLineItem(
+                "download", DownloadLabel(self._app, self.download_mgr.worker)
+            )
+        )
 
     def _add_download_action(self, ctx):
         def download(models):
             # Note that these models may be the same.
             for model in set(models):
                 if model.meta.model_type == ModelType.song:
-                    logger.info(f"add download task: {model}")
                     run_afn(self.download_mgr.download, model)
 
         add_action = ctx["add_action"]
