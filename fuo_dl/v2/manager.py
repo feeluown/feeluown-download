@@ -42,7 +42,7 @@ class DownloadManager:
     def __init__(self, app: App):
         self._app = app
         self._path = app.config.dl.DOWNLOAD_DIR
-        self.worker = Worker(self._app)
+        self.worker = Worker(self._app, app.config.dl.CORE_LANGUAGE)
         self.worker.task_finished.connect(self.on_task_finished)
 
     def initialize(self):
@@ -115,8 +115,9 @@ class DownloadTask:
 
 
 class Worker:
-    def __init__(self, app: App):
+    def __init__(self, app: App, lang):
         self._app = app
+        self._lan = lang
         self._tasks = []
         self._task_queue = asyncio.Queue()
 
@@ -188,4 +189,28 @@ class Worker:
             "album": metadata["album"],
             # TODO: set albumartist field, albumartist=album.artists_name
         }
+        beautify_tagobj(tag_obj, self._lan)
         set_tag_obj(fpath, tag_obj, artwork_data)
+
+
+# Copied from fuo_dl.tag_helpers.py
+def beautify_tagobj(tag_obj, lang):
+    def base_beautify_str(_str):
+        # 不同音乐平台的音乐信息对于中文括号和英文括号的显示比较混乱，常出现于(Live)/(Explicit)等
+        # 当出现中文左括号时 我们将其美化为空格+英文左括号，右括号只需直接替换即可
+        return _str.replace(" （", " (").replace("（", " (").replace("）", ")").strip()
+
+    beautify_str = base_beautify_str
+    try:
+        if lang in ["cn", "tc"]:
+            import inlp.convert.chinese as cv
+
+            def beautify_str(_str):
+                _str = base_beautify_str(_str)
+                return cv.t2s(_str) if lang == "cn" else cv.s2t(_str)
+
+    except ImportError as e:
+        logger.warning(f"beautify tagobj with {lang} failed, {e}")
+    for key in tag_obj.keys():
+        tag_obj[key] = beautify_str(tag_obj[key])
+    return tag_obj

@@ -8,6 +8,12 @@ FeelUOwn 下载插件，不提供（也不建议提供）安装包，需要的�
 
 ### 下载歌曲
 只支持下载 v2 model 的歌曲。下载歌曲的时候，如果歌曲已经存在，则跳过下载。
+下载歌曲时，会自动给歌曲添加 id3 tag 信息。
+
+如果需要将文字（从繁体）自动转成简体，可以安装 `pip3 install inlp` 依赖，并配置
+```python
+app.config.dl.CORE_LANGUAGE = 'cn'
+```
 
 ### 歌曲文件默认命名规则
 `{title}__{artists_names}__{album_name}__{kbps}__{duration_ms}.{ext}`
