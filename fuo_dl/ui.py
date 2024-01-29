@@ -1,8 +1,7 @@
 import logging
 
 from feeluown.utils import aio
-from feeluown.models import ModelType
-from feeluown.library.model_state import ModelState
+from feeluown.library import ModelType, ModelState
 from feeluown.gui.helpers import async_run
 from feeluown.media import Media
 from feeluown.gui.widgets.statusline import StatusLineItem
