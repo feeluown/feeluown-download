@@ -56,13 +56,13 @@ class DownloadManager:
         logger.info(f"task: {filename} has been put into queue")
         return filepath
 
-    async def get(self, url, filename):
+    async def get(self, media, filename):
         """download and save a file
 
-        :param url: file url
+        :param media: media
         :param filename: target file name
         """
-        return await self.get_media(Media(url), filename)
+        return await self.get_media(media, filename)
 
     async def worker(self):
         while True:
@@ -100,6 +100,7 @@ class DownloadManager:
             logger.info(f"download content into {filename} failed")
         else:
             path = self._getpath(task.filename)
+            self.download_finished.emit(filename, True)
             logger.info(f"content has been saved into {path}")
 
     def is_file_downloaded(self, filename):
