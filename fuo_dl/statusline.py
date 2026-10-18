@@ -1,5 +1,5 @@
-from PyQt5.QtCore import Qt, QRect, QTimer
-from PyQt5.QtGui import QColor, QPalette
+from PyQt6.QtCore import Qt, QRect, QTimer
+from PyQt6.QtGui import QColor, QPalette
 
 from feeluown.gui.widgets.statusline import StatuslineLabel
 
@@ -35,9 +35,9 @@ class DownloadLabel(StatuslineLabel):
         self.update()
 
     def drawInner(self, painter):
-        fill_color = self.palette().color(QPalette.Text)
+        fill_color = self.palette().color(QPalette.ColorRole.Text)
         painter.setBrush(QColor(fill_color))
-        painter.setPen(Qt.NoPen)
+        painter.setPen(Qt.PenStyle.NoPen)
 
         # parameters
         inner_width, inner_height = self._inner_width, self._inner_height
@@ -102,7 +102,7 @@ class DownloadLabel(StatuslineLabel):
 
 if __name__ == "__main__":
     from unittest.mock import MagicMock
-    from PyQt5.QtWidgets import QApplication
+    from PyQt6.QtWidgets import QApplication
 
     app = QApplication([])
     widget = DownloadLabel(MagicMock(), MagicMock())
