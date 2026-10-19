@@ -1,5 +1,7 @@
 import logging
 
+from PyQt6.QtWidgets import QPushButton
+
 from feeluown.utils import aio
 from feeluown.library import ModelType, ModelState
 from feeluown.gui.helpers import async_run
@@ -27,10 +29,19 @@ class DownloadUi:
         self._tag_mgr = tag_mgr
         self._app = app
         self._ui = ui
-        self.cur_song_dl_btn = ui.pc_panel.download_btn
-        self._ui.bottom_panel.status_line.add_item(
-            StatusLineItem("download", DownloadLabel(self._app, mgr))
-        )
+        self.cur_song_dl_btn = getattr(ui.pc_panel, "download_btn", None)
+        if self.cur_song_dl_btn is None:
+            self.cur_song_dl_btn = QPushButton(ui.pc_panel)
+            self.cur_song_dl_btn.setObjectName("download_btn")
+            self.cur_song_dl_btn.setToolTip("下载当前歌曲")
+            self.cur_song_dl_btn.setCheckable(True)
+            self.cur_song_dl_btn.setFixedSize(15, 15)
+            ui.pc_panel.download_btn = self.cur_song_dl_btn
+        status_line = getattr(self._ui.bottom_panel, "status_line", None)
+        if status_line is not None:
+            status_line.add_item(
+                StatusLineItem("download", DownloadLabel(self._app, mgr))
+            )
 
     def initialize(self):
         logger.info(f"fuo-dl init")
@@ -43,7 +54,7 @@ class DownloadUi:
             pass
         self.cur_song_dl_btn.clicked.connect(self._download_cur_media)
         self._ui.pc_panel._sub_top_layout.addSpacing(8)
-        self._ui.pc_panel._sub_top_layout.addWidget(self._ui.pc_panel.download_btn)
+        self._ui.pc_panel._sub_top_layout.addWidget(self.cur_song_dl_btn)
         self._ui.songs_table.about_to_show_menu.connect(self._add_download_action)
         self.cur_song_dl_btn.show()
 
